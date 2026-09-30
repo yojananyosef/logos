@@ -5,22 +5,22 @@ shell, theme, `LayoutClass`, catalog contract and `WorkspaceController`.
 
 ## 0. Repositories
 
-- [ ] 0.1 Create the `logos-engine` repository with a pinned dependency on the catalog contract package, verified by a build that resolves the contract
-- [ ] 0.2 Create the `logos-catalogs` repository with the contract package and the CLI, verified by both building
-- [ ] 0.3 Define the contract's resource types, `ResourceRef`, `CatalogManifest` and `LibraryRepository`, verified by a test that a fake implementation satisfies the interface
-- [ ] 0.4 Implement contract major-version compatibility checking, verified by a test rejecting an incompatible catalog with a clear error
+- [x] 0.1 Create the `logos-engine` repository with a pinned dependency on the catalog contract package, verified by a build that resolves the contract
+- [x] 0.2 Create the `logos-catalogs` repository with the contract package and the CLI, verified by both building
+- [x] 0.3 Define the contract's resource types, `ResourceRef`, `CatalogManifest` and `LibraryRepository`, verified by a test that a fake implementation satisfies the interface
+- [x] 0.4 Implement contract major-version compatibility checking, verified by a test rejecting an incompatible catalog with a clear error
 - [ ] 0.5 Document the two-repository split, the contract boundary and the release-independence workflow in `docs/architecture.md`
 
 ## 1. Catalog and licensing
 
-- [ ] 1.1 Implement the per-resource license manifest with `license`, `attribution`, `sourceUrl` and verification status, verified by a test per license class
-- [ ] 1.2 Implement the build gate failing on an unresolved license, verified by a test naming the resource
-- [ ] 1.3 Implement the build gate failing on a missing required attribution, verified by a test
-- [ ] 1.4 Implement the build gate failing on a non-commercial license in a commercial build, verified by a test
-- [ ] 1.5 Implement share-alike detection, catalog-level flag propagation and refusal to mix share-alike into a closed catalog, verified by tests per case
-- [ ] 1.6 Implement temporal release gating by date and jurisdiction, verified by a test failing before the release date and outside the jurisdiction
+- [x] 1.1 Implement the per-resource license manifest with `license`, `attribution`, `sourceUrl` and verification status, verified by a test per license class
+- [x] 1.2 Implement the build gate failing on an unresolved license, verified by a test naming the resource
+- [x] 1.3 Implement the build gate failing on a missing required attribution, verified by a test
+- [x] 1.4 Implement the build gate failing on a non-commercial license in a commercial build, verified by a test
+- [x] 1.5 Implement share-alike detection, catalog-level flag propagation and refusal to mix share-alike into a closed catalog, verified by tests per case
+- [x] 1.6 Implement temporal release gating by date and jurisdiction, verified by a test failing before the release date and outside the jurisdiction
 - [ ] 1.7 Implement a licensed-resource exclusion list so licensed content never enters a distributable catalog, verified by a test
-- [ ] 1.8 Implement content integrity verification by hash, verified by a test failing on mismatch
+- [x] 1.8 Implement content integrity verification by hash, verified by a test failing on mismatch
 - [ ] 1.9 Implement reproducible builds from a pinned source manifest, verified by a test asserting two builds are byte-identical
 - [ ] 1.10 Implement user-installable catalogs with install, replace, list and remove, verified by tests
 - [ ] 1.11 Verify removing a catalog preserves notes, highlights and documents, verified by a test
@@ -34,11 +34,11 @@ shell, theme, `LayoutClass`, catalog contract and `WorkspaceController`.
 
 ## 2. Corpus ingestion
 
-- [ ] 2.1 Implement a USFM and morph-encoded USFM parser producing verses with word-level data, verified by a test on a known passage
+- [x] 2.1 Implement a USFM and morph-encoded USFM parser producing verses with word-level data, verified by a test on a known passage
 - [ ] 2.2 Implement a SWORD module reader for the existing module distribution, verified by a test reading a known module
 - [ ] 2.3 Implement verse-anchored commentary ingestion, verified by a test asserting verse anchors
 - [ ] 2.4 Implement chapter-level commentary ingestion with declared granularity, verified by a test
-- [ ] 2.5 Implement a Barnes-style inline verse-marker splitter, verified by a test asserting the expected number of verses extracted
+- [x] 2.5 Implement a Barnes-style inline verse-marker splitter, verified by a test asserting the expected number of verses extracted
 - [ ] 2.6 Ingest the Biblia Platense behind the release date, verified by a test asserting the build refuses before 1 January 2027
 - [ ] 2.7 Ingest Reina-Valera 1865 and the English public-domain parallels, verified by a test
 - [ ] 2.8 Ingest the Westminster Leningrad Codex and SBLGNT, verified by a test asserting the recorded license

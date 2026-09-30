@@ -2,43 +2,43 @@
 
 ## 1. Project scaffold and toolchain
 
-- [ ] 1.1 Create the Flutter project with `flutter create --platforms=android,ios,web,linux,macos,windows --org cl.logos logos_app` and verify `flutter --version` and the six platform folders exist
-- [ ] 1.2 Add dependencies `flutter_riverpod`, `go_router`, `flutter_test`, `mocktail` and verify `flutter pub get` resolves cleanly
-- [ ] 1.3 Create the feature-first directory tree `lib/{app,core,features,shared}` and verify `flutter analyze` reports no issues
+- [x] 1.1 Create the Flutter project with `flutter create --platforms=android,ios,web,linux,macos,windows --org cl.logos logos_app` and verify `flutter --version` and the six platform folders exist
+- [x] 1.2 Add dependencies `flutter_riverpod`, `go_router`, `flutter_test`, `mocktail` and verify `flutter pub get` resolves cleanly
+- [x] 1.3 Create the feature-first directory tree `lib/{app,core,features,shared}` and verify `flutter analyze` reports no issues
 - [ ] 1.4 Bundle Source Sans Pro (regular, semibold, bold) into `assets/fonts/` with its OFL licence and verify the font loads in a widget test asserting the resolved family
 - [ ] 1.5 Add a `tool/generate_theme.dart` that reads `docs/research/design-tokens.json` and emits the theme, and verify the generated output matches the committed `lib/core/theme/logos_colors.dart`
 
 ## 2. Design system
 
-- [ ] 2.1 Implement `LogosColors` and `LogosSpacing` with the exact token values from `specs/design-system/spec.md` and verify a unit test asserts each value against `design-tokens.json`
-- [ ] 2.2 Build the `ThemeData` from those tokens — Source Sans Pro, `#154AC9` primary, `#E7E7E7` borders — and verify a test asserts the primary is not the Material default
-- [ ] 2.3 Implement the active-tab indicator of 2 px `#154AC9` with `#F4F4F4` background and verify a widget test measures the border on the active toolbar section
+- [x] 2.1 Implement `LogosColors` and `LogosSpacing` with the exact token values from `specs/design-system/spec.md` and verify a unit test asserts each value against `design-tokens.json`
+- [x] 2.2 Build the `ThemeData` from those tokens — Source Sans Pro, `#154AC9` primary, `#E7E7E7` borders — and verify a test asserts the primary is not the Material default
+- [x] 2.3 Implement the active-tab indicator of 2 px `#154AC9` with `#F4F4F4` background and verify a widget test measures the border on the active toolbar section
 - [ ] 2.4 Build base components (nav item, tab, toolbar section, card, banner, filter chip, reader panel) with default/hover/pressed/selected/focus/disabled states, verifying each state in a widget test
-- [ ] 2.5 Add a visible `#4797FF` focus ring and verify a widget test detects the focus indicator on keyboard traversal
+- [x] 2.5 Add a visible `#4797FF` focus ring and verify a widget test detects the focus indicator on keyboard traversal
 - [ ] 2.6 Implement the limited-view (high contrast) mode and verify a test asserts contrast ratios meet WCAG AA in both normal and limited modes
 - [ ] 2.7 Document the token mapping in `docs/design-system.md` and verify each documented colour resolves to a token present in `design-tokens.json`
 
 ## 3. Adaptive layout foundation
 
-- [ ] 3.1 Implement `LayoutClass` and the pure resolver with breakpoints `<600`, `600–1023`, `1024–1439`, `>=1440`, verified by a unit test covering boundary values 599/600/1023/1024/1439/1440
-- [ ] 3.2 Implement the `SlotPolicy` table from design D1 and verify a unit test asserts the expected policy for every class
+- [x] 3.1 Implement `LayoutClass` and the pure resolver with breakpoints `<600`, `600–1023`, `1024–1439`, `>=1440`, verified by a unit test covering boundary values 599/600/1023/1024/1439/1440
+- [x] 3.2 Implement the `SlotPolicy` table from design D1 and verify a unit test asserts the expected policy for every class
 - [ ] 3.3 Provide `LayoutClass` through a Riverpod provider and verify a widget test that changes the surface size observes the class change without losing workspace state
-- [ ] 3.4 Implement the compact drawer with the full sidebar content, verifying it overlays rather than displacing, closes on selection, and closes on back gesture
-- [ ] 3.5 Implement the compact bottom navigation with the nine destinations, verifying it replaces the rail and the expanded sidebar on compact only
-- [ ] 3.6 Add an overflow test harness that renders every screen at 360, 390, 600, 768, 1024, 1280 and 1440 px and asserts `scrollWidth == viewportWidth` for each
+- [x] 3.4 Implement the compact drawer with the full sidebar content, verifying it overlays rather than displacing, closes on selection, and closes on back gesture
+- [x] 3.5 Implement the compact bottom navigation with the nine destinations, verifying it replaces the rail and the expanded sidebar on compact only
+- [x] 3.6 Add an overflow test harness that renders every screen at 360, 390, 600, 768, 1024, 1280 and 1440 px and asserts `scrollWidth == viewportWidth` for each
 - [ ] 3.7 Document the breakpoint table and slot policy in `docs/adaptive-layout.md` and verify the documented breakpoints match `LayoutClass`
 
 ## 4. Workspace shell
 
-- [ ] 4.1 Implement the 48 px icon rail with the `Pasaje o tema` field and verify a widget test asserts the rail width
-- [ ] 4.2 Implement the sidebar with the nine destinations in order and verify a test asserts order, icons, labels and that exactly one is active
-- [ ] 4.3 Implement sidebar collapse/expand with persistence for the session, verified by a test that collapses, navigates and asserts the state is retained
-- [ ] 4.4 Implement the `Acciones Rápidas` section with the five entries, verifying each opens its resource in a new tab and that the comparison entry opens the comparison tool
-- [ ] 4.5 Implement the sidebar footer (Centro de ayuda, Entornos, Cerrar todos los paneles, session control), verifying `Cerrar todos los paneles` closes every tab and returns to the dashboard
-- [ ] 4.6 Implement the resource tab strip with name, accessibility badge and close control, verifying open/activate/close and that closing the last tab shows the dashboard
-- [ ] 4.7 Implement duplicate-tab prevention and horizontal scrolling with the active tab scrolled into view, verified by widget tests
-- [ ] 4.8 Implement the per-tab toolbar (Inicio, Búsqueda, Notas, Formato, Vista, Compartir, Más) and verify switching sections keeps the same tab active
-- [ ] 4.9 Implement the sub-toolbar (Contenido, Historia, Artículo, Conjunto de enlaces, Ideas, Información del libro), verifying each presents its panel
+- [x] 4.1 Implement the 48 px icon rail with the `Pasaje o tema` field and verify a widget test asserts the rail width
+- [x] 4.2 Implement the sidebar with the nine destinations in order and verify a test asserts order, icons, labels and that exactly one is active
+- [x] 4.3 Implement sidebar collapse/expand with persistence for the session, verified by a test that collapses, navigates and asserts the state is retained
+- [x] 4.4 Implement the `Acciones Rápidas` section with the five entries, verifying each opens its resource in a new tab and that the comparison entry opens the comparison tool
+- [x] 4.5 Implement the sidebar footer (Centro de ayuda, Entornos, Cerrar todos los paneles, session control), verifying `Cerrar todos los paneles` closes every tab and returns to the dashboard
+- [x] 4.6 Implement the resource tab strip with name, accessibility badge and close control, verifying open/activate/close and that closing the last tab shows the dashboard
+- [x] 4.7 Implement duplicate-tab prevention and horizontal scrolling with the active tab scrolled into view, verified by widget tests
+- [x] 4.8 Implement the per-tab toolbar (Inicio, Búsqueda, Notas, Formato, Vista, Compartir, Más) and verify switching sections keeps the same tab active
+- [x] 4.9 Implement the sub-toolbar (Contenido, Historia, Artículo, Conjunto de enlaces, Ideas, Información del libro), verifying each presents its panel
 - [ ] 4.10 Implement the resource panel header with name, `›` separator, division and close control, verified by a test asserting the header text for a known position
 - [ ] 4.11 Verify the shell against `docs/research/` by comparing a rendered screenshot of the shell to `nav-02-biblioteca.png` and recording the comparison in `docs/research/shell-parity.md`
 
