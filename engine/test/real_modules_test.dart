@@ -86,7 +86,7 @@ void main() {
     expect(await repo.search(id, 'Jesus'), isNotEmpty);
   });
 
-  test('the upstream off-by-one is still present in KJV', () async {
+  test('a module built by tool/build_module.dart has no off-by-one', () async {
     if (!installed.contains('KJV')) {
       expect(installed, isNotEmpty, reason: 'no modules at all in $dir');
       return;
@@ -94,12 +94,21 @@ void main() {
 
     final module = await repo.open('KJV');
 
-    // 260 chapters start at a verse other than 1, so John 1:1 does not exist. The
-    // upstream end-to-end test read Genesis 1:1, in the unaffected Old Testament, and
+    // This assertion used to expect the defect: 260 chapters starting at a verse other
+    // than 1, so John 1:1 did not exist, because the upstream ETL indexed a chapter's
+    // lines as `lines[verse - 1]` while the first line of a chapter is the chapter
+    // marker. Its end-to-end test read Genesis 1:1, in the unaffected Old Testament, and
     // passed.
-    expect(module.integrity.isValid, isFalse);
-    expect(module.integrity.failures.length, 260);
-    expect(await repo.verse('KJV', 'John', 1, 1), isEmpty);
+    //
+    // It is inverted now because `UsfmExtractor` captures the implicit `\v 1` and
+    // `tool/build_module.dart` builds through it. The expectation is now the contract: a
+    // module this repository builds must address verse 1 of every chapter. If a rebuild
+    // ever ships the upstream behaviour again, this fails, which is what it is for.
+    expect(module.integrity.isValid, isTrue,
+        reason: 'a module built by build_module.dart must have no integrity failures, '
+            'got ${module.integrity.failures.length}');
+    expect(await repo.verse('KJV', 'John', 1, 1), isNotEmpty,
+        reason: 'John 1:1 must exist, or the reader cannot cite it');
   });
 
   test('the upstream merged-verse defect is still present in WEB', () async {

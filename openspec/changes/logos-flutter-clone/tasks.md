@@ -53,10 +53,11 @@
 
 - [x] 6.1 Define the library contract in the domain layer, with the catalogue parsed and licence state computed, verified by tests covering a clean entry, an unresolved licence and a corrupt catalogue
 - [x] 6.2 Build `ModuleStore` and `ModuleInstaller`, verified by tests that a verified module installs and lists, a hash mismatch writes nothing, and a non-module archive is rejected (supersedes the bundled-JSON wording; see D10)
-- [ ] 6.3 Add the public-domain corpus assets and verify a test asserts every bundled resource is flagged public domain
-- [ ] 6.4 Build the in-memory inverted index with incremental construction, verified by a test asserting correct postings for a known term
-- [ ] 6.5 Implement the chapter/verse pre-split cache and verify a test asserts O(1)-style lookup by book, chapter and verse
+- [ ] 6.3 Add the public-domain corpus assets and verify a test asserts every bundled resource is flagged public domain — **not started, and now the critical path**. The catalog declares 18 resources but every `sha256` is still `PLACEHOLDER_*`, so no module has ever been built. Only PLATENSE is licence-blocked (until 2027-01-01); RV1865 is Spanish, public domain and passes the validator today. See task 6.7.
+- [x] 6.4 Build the in-memory inverted index with incremental construction, verified by a test asserting correct postings for a known term — **superseded by 9.3**. Retrieval is each module's own FTS5 index. No in-memory inverted index exists or is planned.
+- [x] 6.5 Implement the chapter/verse pre-split cache and verify a test asserts O(1)-style lookup by book, chapter and verse — **superseded by 9.3**. Chapters are read per request from the module database; there is no pre-split cache.
 - [ ] 6.6 Document the repository interface and how to swap in a networked source in `docs/corpus.md`
+- [ ] 6.7 Build one real `.amod` and run `real_modules_test.dart`, which has never executed because `LOGOS_MODULE_DIR` has never pointed at a real build. This is the last unverified assumption in the project: the reader, the FTS5 search, the reference parser and the book-alias wiring have only ever seen four-verse English fixtures from `ModuleBuilder`. Building RV1865 covers the Spanish case the application is written for, and requires writing the module assembler, which does not exist yet
 
 ## 7. Library browser
 
@@ -85,17 +86,18 @@
 
 ## 9. Search
 
-- [ ] 9.1 Implement the lexer and verify unit tests for terms, phrases, operators, wildcards and references
-- [ ] 9.2 Implement the parser producing an AST and verify unit tests for each operator's precedence
-- [ ] 9.3 Implement the evaluator over the inverted index and verify tests for `O`, `Y`, `NO`, `ANTES`, `DESPUES` and `CERCA n`
-- [ ] 9.4 Implement quoted phrase matching, verified by a test that a non-exact match is excluded
-- [ ] 9.5 Implement `*` and `?` wildcards, verified by tests including the non-prefix exclusion case
-- [ ] 9.6 Implement `Biblia:"Jn 3:16"` reference resolution and verify tests for a verse, a chapter, and an invalid reference
-- [ ] 9.7 Implement unknown-operator reporting, verified by a test asserting the error names the operator
-- [ ] 9.8 Implement the Todo/Biblia/Libros scopes, verified by a test asserting result types per scope and re-running on scope change
-- [ ] 9.9 Implement results with highlighted terms, match count and an empty state with a suggestion
-- [ ] 9.10 Implement the syntax help panel with the required sections and example insertion, verified by a widget test
-- [ ] 9.11 Wire the rail's `Pasaje o tema` field so references open the reader and topics open search, verified by tests for both
+- [x] 9.1 Implement the lexer and verify unit tests for terms, phrases, operators, wildcards and references
+- [x] 9.2 Implement the parser producing an AST and verify unit tests for each operator's precedence
+- [x] 9.3 Implement the evaluator and verify tests for `O`, `Y`, `NO`, `ANTES`, `DESPUES` and `CERCA n` — **superseded architecture**: retrieval asks each module's own FTS5 index for candidates and `SearchMatcher` then decides them, instead of one inverted index in memory. FTS5 in this build has no `NEAR` (it parses and matches nothing) and rejects `?` as a syntax error, so delegating the decision to it would silently return nothing for working queries. See tasks 6.4 and 6.5.
+- [x] 9.4 Implement quoted phrase matching, verified by a test that a non-exact match is excluded
+- [x] 9.5 Implement `*` and `?` wildcards, verified by tests including the non-prefix exclusion case
+- [x] 9.6 Implement `Biblia:"Jn 3:16"` reference resolution and verify tests for a verse, a chapter, and an invalid reference
+- [x] 9.7 Implement unknown-operator reporting, verified by a test asserting the error names the operator
+- [x] 9.8 Implement the Todo/Biblia/Libros scopes, verified by a test asserting result types per scope and re-running on scope change
+- [x] 9.9 Implement results with highlighted terms, match count and an empty state with a suggestion
+- [x] 9.10 Implement the syntax help panel with the required sections and example insertion, verified by a widget test
+- [ ] 9.11 Verify the rail's `Pasaje o tema` field: a reference opens the reader and a topic opens search. The routing in `_onPassageQuery` is implemented and `workspace_test` asserts the field exists, but nothing verifies the two branches are chosen correctly
+- [ ] 9.12 Cover opening a search result in the reader, which is wired in `app.dart` but has no test
 
 ## 10. Home dashboard
 
