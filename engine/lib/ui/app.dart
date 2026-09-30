@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../app_providers.dart';
 import 'core/layout/adaptive_layout.dart';
 import 'core/layout/layout_class.dart';
 import 'core/theme/logos_colors.dart';
 import 'core/theme/logos_spacing.dart';
 import 'core/theme/logos_theme.dart';
+import '../domain/models/catalog.dart';
 import '../domain/models/workspace_destination.dart';
+import 'features/library/views/library_view.dart';
+import 'features/reader/views/bible_reader_view.dart';
 import 'features/workspace/view_models/workspace_view_model.dart';
 import 'features/workspace/views/home_dashboard.dart';
 import 'features/workspace/views/resource_workspace.dart';
@@ -114,16 +118,41 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
   Widget _body(WorkspaceViewModel vm) {
     // The workspace occupies the content area; the destinations that are not resource
     // panels render their own surfaces inside it.
-    if (vm.state.tabs.isNotEmpty) return ResourceWorkspace(viewModel: vm);
+    if (vm.state.tabs.isNotEmpty) {
+      final resource = _panelResource;
+      if (resource != null && resource.type == ResourceType.bible) {
+        return _ReaderPanel(moduleId: resource.id);
+      }
+      return ResourceWorkspace(viewModel: vm);
+    }
     return _destinationSurface(vm);
   }
 
   Widget _destinationSurface(WorkspaceViewModel vm) {
     return switch (vm.state.destination) {
       WorkspaceDestination.home => const HomeDashboard(),
+      WorkspaceDestination.library => LibraryView(
+          viewModel: ref.watch(libraryViewModelProvider),
+          onOpenResource: _openResource,
+        ),
       _ => _PlaceholderSurface(destination: vm.state.destination),
     };
   }
+
+  /// Opens a resource in a tab, choosing the surface that can actually read it.
+  ///
+  /// A bible goes to the reader because that is the one resource type the reader
+  /// implements. Anything else gets the generic panel rather than a reader that would
+  /// fail to find the tables it needs — a wrong-but-plausible empty panel is harder to
+  /// diagnose than an unimplemented one.
+  void _openResource(ResourceDescriptor resource) {
+    final vm = ref.read(workspaceViewModelProvider);
+    vm.openTab(
+        resource.id, resource.shortName.isEmpty ? resource.name : resource.shortName);
+    setState(() => _panelResource = resource);
+  }
+
+  ResourceDescriptor? _panelResource;
 
   PreferredSizeWidget _topBar(LayoutClass layoutClass) {
     return AppBar(
@@ -198,5 +227,37 @@ class _PlaceholderSurface extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Hosts the reader for one module.
+///
+/// Separate from the resource workspace because it replaces the whole content area: a
+/// reader needs the full width, and squeezing it beside the tab chrome would leave a
+/// column too narrow to read scripture in.
+class _ReaderPanel extends ConsumerStatefulWidget {
+  const _ReaderPanel({required this.moduleId});
+
+  final String moduleId;
+
+  @override
+  ConsumerState<_ReaderPanel> createState() => _ReaderPanelState();
+}
+
+class _ReaderPanelState extends ConsumerState<_ReaderPanel> {
+  @override
+  void initState() {
+    super.initState();
+    // Opening after the first frame, because it notifies listeners and the provider has
+    // to be read from a mounted widget.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(readerViewModelProvider(widget.moduleId).notifier).open(widget.moduleId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = ref.watch(readerViewModelProvider(widget.moduleId));
+    return BibleReaderView(viewModel: vm);
   }
 }

@@ -58,16 +58,12 @@ void _emitClass(
     ..writeln('  const $className._();')
     ..writeln();
 
-  var group = '';
-  var first = true;
+  // A blank line between every declaration, which is what `dart format` produces for a
+  // doc-commented member. Emitting it here rather than only at group boundaries means
+  // running the formatter over this file is a no-op, so formatting the project cannot
+  // silently break theme parity.
+  final body = StringBuffer();
   for (final entry in values) {
-    final nextGroup = _groupOf(entry.key);
-    if (nextGroup != group) {
-      if (!first) out.writeln();
-      group = nextGroup;
-    }
-    first = false;
-
     final token = isColor ? colorBindings[entry.key] : dimensionBindings[entry.key];
     // The resolver yields `RRGGBBAA`, following CSS. `Color(0x...)` wants `AARRGGBB`,
     // so the alpha has to move from the end to the front. Getting this wrong rotates
@@ -75,12 +71,17 @@ void _emitClass(
     // is not the reference's, which is why the parity test compares committed bytes
     // rather than eyeballing swatches.
     final value = isColor ? 'Color(0x${_toArgbLiteral(entry.value)})' : entry.value;
-    out
+    body
       ..writeln('  /// ${isColor ? '#${_asCssHex(entry.value)}' : entry.value} — $token')
       ..writeln('  static const ${isColor ? 'Color' : 'double'} '
-          '${entry.key} = $value;');
+          '${entry.key} = $value;')
+      ..writeln();
   }
+
+  // The blank after the last member would otherwise sit against the closing brace.
+  out.write(body.toString().trimRight());
   out
+    ..writeln()
     ..writeln('}')
     ..writeln();
 }
@@ -169,28 +170,6 @@ void _emitTypeScale(StringBuffer out) {
     ..writeln('  /// The superscript verse marker.')
     ..writeln('  static const double verseNumberSize = 10;')
     ..writeln('}');
-}
-
-/// Groups the declarations by surface, so the generated file reads as the palette it
-/// is rather than as a flat list.
-String _groupOf(String dartName) {
-  if (dartName.startsWith('text') ||
-      dartName.startsWith('document') ||
-      dartName.startsWith('segment') ||
-      dartName.startsWith('red') ||
-      dartName.startsWith('search')) {
-    return 'text';
-  }
-  if (dartName.startsWith('surface')) return 'surface';
-  if (dartName.startsWith('border') || dartName.startsWith('tab')) return 'border';
-  if (dartName.startsWith('link') || dartName.startsWith('focus')) return 'link';
-  if (dartName.startsWith('danger') ||
-      dartName.startsWith('warning') ||
-      dartName.startsWith('info') ||
-      dartName.startsWith('success')) {
-    return 'status';
-  }
-  return 'brand';
 }
 
 String _trimNum(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toString();

@@ -106,7 +106,7 @@ platform, as invisible fallback text.
 flutter test
 ```
 
-43 tests in three files:
+92 tests across six files, plus an opt-in suite that runs against real published modules:
 
 - `workspace_test.dart` — the layout classes and their exact boundaries, the slot policy,
   the absence of horizontal overflow from 360 to 1440, the shell's chrome per class, the

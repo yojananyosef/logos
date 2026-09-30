@@ -220,3 +220,49 @@ Conclusión: **AMF se adopta tal cual.** No hace falta cambiar el formato por FT
 **Lo que había que verificar antes de escribir una línea de Dart:** si FTS5 está disponible en
 SQLite sobre las seis plataformas de Flutter, empezando por web. Si no lo estuviera, el formato
 necesitaría un fallback — y eso sería una decisión de diseño, no un detalle de implementación.
+
+## Two distinct verse-addressing defects, verified against the real modules
+
+Both were found by reading the artefacts rather than the documentation, and they are
+different bugs with the same consequence: a reference the user types does not resolve.
+
+### 1. Lost first verse — KJV and ASV, 260 chapters each
+
+`John 1:1` returns **zero rows**. Every affected chapter begins at verse 2. The cause is
+the RawText reader indexing a chapter's lines as `lines[verse - 1]` when the first line of
+a SWORD RawText chapter chunk is the chapter marker, so verse N lives at `lines[N]`.
+
+The upstream end-to-end test read `Genesis 1:1` — Old Testament, unaffected — and passed.
+
+Verified: 260 chapters start at a verse other than 1 in both modules.
+
+### 2. Merged verses, `verseEnd` never populated — WEB, 4 chapters
+
+`Luke 17:36`, `Acts 8:37`, `Acts 15:41` and `Acts 24:27` all return **zero rows** — but
+unlike the first defect, **the text is present**. USFM writes several verses as one run
+under a range marker, and the ETL stores that run under the first verse number and leaves
+`verseEnd` NULL:
+
+```
+Luke 17:35  "There will be two grinding grain together. One will be taken and the other will be left."
+```
+
+That is both 17:35 and 17:36. Every chapter still *starts* at verse 1, so a check for
+missing first verses alone reports WEB as sound — which is why an earlier note in this
+repository called WEB "clean (0 missing)". **That was wrong**, and this section is the
+correction.
+
+For a study application this second defect is the worse of the two. A missing chapter is
+obviously missing. Text that is visible one line above while the reference the user typed
+returns nothing looks like a bug in the app.
+
+### Consequences for this build
+
+- `UsfmExtractor` records `verseEnd` from the range marker instead of discarding the tail.
+- `AmfBibleDao.singleVerse` matches `verseEnd` spans, so 17:36 resolves to the row that
+  holds its text, and returns the row's own numbering so a caller can see what matched.
+- `AmfIntegrityChecker` compares the next verse against what the previous row *covers*.
+  Comparing against `verse + 1` reports every correctly-built range as a gap.
+- `test/real_modules_test.dart` asserts both defects as *expected* against the real
+  artefacts, so a rebuild that fixes them fails the test and forces the expectations to be
+  revisited. That is the only way a test keeps telling the truth about data it does not own.

@@ -51,8 +51,8 @@
 
 ## 6. Corpus and library repository
 
-- [ ] 6.1 Define the `LibraryRepository` interface in the domain layer, verified by a test that a fake implementation satisfies it
-- [ ] 6.2 Build the `AssetLibraryRepository` reading bundled JSON, verified by a test loading a known resource and asserting its metadata
+- [x] 6.1 Define the library contract in the domain layer, with the catalogue parsed and licence state computed, verified by tests covering a clean entry, an unresolved licence and a corrupt catalogue
+- [x] 6.2 Build `ModuleStore` and `ModuleInstaller`, verified by tests that a verified module installs and lists, a hash mismatch writes nothing, and a non-module archive is rejected (supersedes the bundled-JSON wording; see D10)
 - [ ] 6.3 Add the public-domain corpus assets and verify a test asserts every bundled resource is flagged public domain
 - [ ] 6.4 Build the in-memory inverted index with incremental construction, verified by a test asserting correct postings for a known term
 - [ ] 6.5 Implement the chapter/verse pre-split cache and verify a test asserts O(1)-style lookup by book, chapter and verse
@@ -64,13 +64,13 @@
 - [ ] 7.2 Implement the `Suyos` / `Tienda` / `por Título` filters, verifying each changes the list and the reported total
 - [ ] 7.3 Implement search-as-you-type filtering by title and subtitle, verifying filtering, clearing and the no-match empty state
 - [ ] 7.4 Implement grid and list view modes with persistence, verified by a test that switches, navigates away and returns
-- [ ] 7.5 Implement opening a resource in a new tab, verifying that an already-open resource activates the existing tab instead of duplicating
+- [x] 7.5 Implement opening a resource in a new tab, verifying that an already-open resource activates the existing tab instead of duplicating
 - [ ] 7.6 Implement the responsive grid (1/2/3/3+ columns) and verify it in the overflow harness
 - [ ] 7.7 Implement loading and recoverable error states with retry, verified by a test with a failing repository
 
 ## 8. Bible reader
 
-- [ ] 8.1 Implement book/chapter/verse navigation and verify the header text for a known position
+- [x] 8.1 Implement book/chapter/verse navigation and verify the header text for a known position
 - [ ] 8.2 Implement inline verse numbers with visible, superscript and hidden styles, verified by a test re-rendering in each style
 - [ ] 8.3 Implement footnote markers and reveal, verified by a test asserting the note text appears and the marker is marked read
 - [ ] 8.4 Implement the chapter footnote list in order, verified by a test
@@ -81,7 +81,7 @@
 - [ ] 8.9 Implement the find bar with highlight, match count and next/previous stepping, verified by tests for found, no-match and stepping
 - [ ] 8.10 Implement full-screen reading and restore, verified by a test asserting the reading position survives
 - [ ] 8.11 Verify the reader works with no network and a swapped repository, verified by a test using a fake repository
-- [ ] 8.12 Add a reading-measure constraint at wide viewports and verify a test asserts the text column does not exceed the maximum measure
+- [x] 8.12 Add a reading-measure constraint at wide viewports and verify a test asserts the text column does not exceed the maximum measure
 
 ## 9. Search
 

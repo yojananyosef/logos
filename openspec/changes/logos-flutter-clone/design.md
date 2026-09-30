@@ -192,3 +192,26 @@ tests so the palette cannot regress below AA.
   if the query string exceeds a safe length.
 - **Generated theme drifts from the JSON** → a test asserts the committed `LogosColors` matches
   the values in `design-tokens.json`.
+
+### D10 — Tasks 6.1–6.2 contradicted D4; resolved in favour of D4
+
+The task list originally specified an `AssetLibraryRepository` reading **bundled JSON**
+assets. That directly contradicts D4, which puts content in a separate repository behind a
+versioned contract, and D4's own rejected-alternatives list names "content as app assets"
+as a considered and rejected option.
+
+D4 wins. What was built instead:
+
+- `ModuleStore` — the directory holding installed `.amod` files.
+- `ModuleInstaller` — verifies the catalog's sha256, checks the archive's entries, and
+  writes atomically. Rejection leaves nothing on disk, so a later install cannot mistake a
+  partial module for a finished one.
+- `BibleRepository` — opens a module read-only, verifies `application_id` and
+  `user_version` from the file's own pragmas before anything can query it, and runs the
+  integrity check.
+- `CatalogService` — parses a catalog index. An unrecognised licence resolves to
+  *unresolved*, never to public domain: defaulting would turn a typo into a declaration
+  that content is free to redistribute.
+
+A JSON index is still read, but as the **catalog's** manifest, fetched at runtime rather
+than compiled into the binary. The distinction is the whole point of D4.

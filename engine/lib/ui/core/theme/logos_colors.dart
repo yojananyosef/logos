@@ -27,6 +27,7 @@ class LogosColors {
 
   /// #154AC9 — app-toolbar-button-active-icon-color
   static const Color primary = Color(0xFF154AC9);
+
   /// #030B60 — app-edition-badge-subscriber-background-color
   static const Color navy = Color(0xFF030B60);
 
@@ -35,89 +36,124 @@ class LogosColors {
 
   /// #1E6AFE — link-color
   static const Color link = Color(0xFF1E6AFE);
+
   /// #4797FF — link-hover-color
   static const Color linkHover = Color(0xFF4797FF);
+
   /// #1E6AFE80 — link-disabled-color
   static const Color linkDisabled = Color(0x801E6AFE);
+
   /// #4797FF — sidebar-menu-item-active-focus-outline-color
   static const Color focusRing = Color(0xFF4797FF);
+
   /// #1E6AFE — link-focus-outline-color
   static const Color linkFocusRing = Color(0xFF1E6AFE);
 
   /// #333333 — app-toolbar-text-color
   static const Color textPrimary = Color(0xFF333333);
+
   /// #515D72 — app-toolbar-icon-color
   static const Color textSecondary = Color(0xFF515D72);
+
   /// #63728C — button-borderless-icon-color
   static const Color textTertiary = Color(0xFF63728C);
+
   /// #888888 — app-toolbar-button-decorator-icon-color
   static const Color textMuted = Color(0xFF888888);
+
   /// #919CAE — button-badge-count-background-color
   static const Color textDisabled = Color(0xFF919CAE);
+
   /// #FFFFFF — app-toolbar-button-active-background-color
   static const Color textInverted = Color(0xFFFFFFFF);
+
   /// #000000 — ui-font-color
   static const Color textBrand = Color(0xFF000000);
+
   /// #AAAAAA — ui-font-color-light
   static const Color textBrandLight = Color(0xFFAAAAAA);
+
   /// #666666 — ui-font-color-medium
   static const Color textBrandMedium = Color(0xFF666666);
 
   /// #FFFFFF — toolbar-background-color
   static const Color surface = Color(0xFFFFFFFF);
+
   /// #EEEEEE — toolbar-separator-color
   static const Color surfaceSunken = Color(0xFFEEEEEE);
+
   /// #F4F4F4 — item-filled-background-color
   static const Color surfaceHover = Color(0xFFF4F4F4);
+
   /// #EEEEEE — app-toolbar-button-background-color
   static const Color surfacePressed = Color(0xFFEEEEEE);
+
   /// #EAEDF2 — app-edition-badge-free-edition-background-color
   static const Color surfaceInverted = Color(0xFFEAEDF2);
 
   /// #E7E7E7 — border-color
   static const Color border = Color(0xFFE7E7E7);
+
   /// #CCCCCC — border-color-heavy
   static const Color borderStrong = Color(0xFFCCCCCC);
+
   /// #919CAE — panel-tab-close-button-color
   static const Color tabCloseIcon = Color(0xFF919CAE);
+
   /// #515D72 — panel-tab-close-button-hover-color
   static const Color tabCloseIconHover = Color(0xFF515D72);
 
   /// #CC3333 — icon-alert-color
   static const Color danger = Color(0xFFCC3333);
+
   /// #FFE9E9 — notification-bar-error-background-color
   static const Color dangerSurface = Color(0xFFFFE9E9);
+
   /// #FFF4D5 — bar-alert-background-color
   static const Color warningSurface = Color(0xFFFFF4D5);
+
   /// #DBA910 — bar-alert-icon-color
   static const Color warningIcon = Color(0xFFDBA910);
+
   /// #1E6AFE — bar-alert-link-color
   static const Color warningLink = Color(0xFF1E6AFE);
+
   /// #E9F5FF — notification-bar-info-background-color
   static const Color infoSurface = Color(0xFFE9F5FF);
+
   /// #154AC9 — notification-bar-info-icon-color
   static const Color infoIcon = Color(0xFF154AC9);
+
   /// #55B155 — icon-biblical-places-natural-feature-color
   static const Color success = Color(0xFF55B155);
 
   /// #8BC5FF — text-alignment-document-primary-link-color
   static const Color documentLink = Color(0xFF8BC5FF);
+
   /// #C1E4FF — text-alignment-document-secondary-link-color
   static const Color documentLinkMuted = Color(0xFFC1E4FF);
+
   /// #FFD86A — text-alignment-document-primary-selected-color
   static const Color documentSelected = Color(0xFFFFD86A);
+
   /// #80C980 — text-alignment-document-note-private-indicator-color
   static const Color documentNotePrivate = Color(0xFF80C980);
+
   /// #FF6600 — text-alignment-document-note-public-indicator-color
   static const Color documentNotePublic = Color(0xFFFF6600);
+
   /// #EEEEEE — text-alignment-document-segment-excused-color
   static const Color segmentExcused = Color(0xFFEEEEEE);
+
   /// #DBF3DB — text-alignment-document-segment-approved-color
   static const Color segmentApproved = Color(0xFFDBF3DB);
+
   /// #F4F4F4 — text-box-background-color
   static const Color textBoxBackground = Color(0xFFF4F4F4);
+
   /// #FF0000 — red-letters-font-color
   static const Color redLetters = Color(0xFFFF0000);
+
   /// #000000 — search-hit-font-color
   static const Color searchHit = Color(0xFF000000);
 }
@@ -129,6 +165,7 @@ class LogosDimensions {
 
   /// 4 — button-border-radius
   static const double borderRadiusButton = 4;
+
   /// 8 — card-stock-border-radius
   static const double borderRadiusCard = 8;
 
