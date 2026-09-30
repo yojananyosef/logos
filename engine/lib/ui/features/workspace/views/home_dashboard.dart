@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/layout/adaptive_layout.dart';
 import '../../../core/theme/logos_colors.dart';
+import '../../../core/theme/logos_spacing.dart';
 import '../../../core/theme/logos_theme.dart';
 
 /// The four card types observed on the reference dashboard, kept distinct because
@@ -71,7 +72,8 @@ class HomeDashboard extends StatelessWidget {
     return const CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(LogosSpacing.lg, LogosSpacing.lg, LogosSpacing.lg, 0),
+          padding:
+              EdgeInsets.fromLTRB(LogosSpacing.lg, LogosSpacing.lg, LogosSpacing.lg, 0),
           sliver: SliverToBoxAdapter(
             child: ConstrainedReading(
               maxWidth: 1200,
@@ -98,7 +100,8 @@ class HomeDashboard extends StatelessWidget {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(LogosSpacing.lg, 0, LogosSpacing.lg, LogosSpacing.xxl),
+          padding:
+              EdgeInsets.fromLTRB(LogosSpacing.lg, 0, LogosSpacing.lg, LogosSpacing.xxl),
           sliver: SliverToBoxAdapter(
             child: ConstrainedReading(
               maxWidth: 1200,
@@ -117,7 +120,8 @@ class _PromoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: LogosSpacing.lg, vertical: LogosSpacing.md),
+      padding: const EdgeInsets.symmetric(
+          horizontal: LogosSpacing.lg, vertical: LogosSpacing.md),
       color: LogosColors.primary,
       // A row of message + CTA + close cannot fit a narrow window, so the banner
       // stacks rather than squeezing the message into a one-word-per-line column.
@@ -154,8 +158,8 @@ class _PromoBanner extends StatelessWidget {
               child: InkWell(
                 onTap: () {},
                 child: const SizedBox(
-                  width: LogosColors.minTouchTarget,
-                  height: LogosColors.minTouchTarget,
+                  width: LogosMeasured.minTouchTarget,
+                  height: LogosMeasured.minTouchTarget,
                   child: Icon(Icons.close, size: 16, color: LogosColors.surface),
                 ),
               ),
@@ -209,9 +213,7 @@ class _CardGrid extends StatelessWidget {
         // "grow with the window" — so the count is computed here from the real width.
         final fixed = layoutClass.gridColumns;
         final columns = fixed ??
-            ((constraints.maxWidth - LogosSpacing.md * 2) / 320)
-                .floor()
-                .clamp(3, 5);
+            ((constraints.maxWidth - LogosSpacing.md * 2) / 320).floor().clamp(3, 5);
         return Wrap(
           spacing: LogosSpacing.md,
           runSpacing: LogosSpacing.md,
@@ -263,19 +265,24 @@ class _Card extends StatelessWidget {
                   Align(
                     alignment: Alignment.topRight,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: LogosSpacing.sm, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: LogosSpacing.sm, vertical: 2),
                       decoration: BoxDecoration(
                         color: LogosColors.surface.withOpacity(0.16),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(
                         data.dateLabel!,
-                        style: LogosTypography.sectionLabel.copyWith(color: LogosColors.surface),
+                        style: LogosTypography.sectionLabel
+                            .copyWith(color: LogosColors.surface),
                       ),
                     ),
                   ),
                 if (data.kind == DashboardCardKind.preOrder)
-                  const _Badge(label: 'Pre-orden', color: LogosColors.infoSoft, fg: LogosColors.navy),
+                  const _Badge(
+                      label: 'Pre-orden',
+                      color: LogosColors.infoSurface,
+                      fg: LogosColors.navy),
                 const SizedBox(height: LogosSpacing.sm),
                 Text(
                   data.title,
@@ -290,7 +297,9 @@ class _Card extends StatelessWidget {
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                     style: LogosTypography.body.copyWith(
-                      color: isAnnouncement ? LogosColors.surface : LogosColors.textSecondary,
+                      color: isAnnouncement
+                          ? LogosColors.surface
+                          : LogosColors.textSecondary,
                     ),
                   ),
                 ],
@@ -361,13 +370,15 @@ class _LibrarySection extends StatelessWidget {
                       const SizedBox(height: LogosSpacing.xs),
                       Text(
                         'Sociedad Bíblica de España',
-                        style: LogosTypography.body.copyWith(color: LogosColors.textSecondary),
+                        style: LogosTypography.body
+                            .copyWith(color: LogosColors.textSecondary),
                       ),
                       const SizedBox(height: LogosSpacing.md),
                       Text(
                         'No hay recursos instalados todavía. Instale un catálogo para '
                         'que esta sección muestre su biblioteca.',
-                        style: LogosTypography.body.copyWith(color: LogosColors.textSecondary),
+                        style: LogosTypography.body
+                            .copyWith(color: LogosColors.textSecondary),
                       ),
                     ],
                   ),
@@ -381,7 +392,8 @@ class _LibrarySection extends StatelessWidget {
                     border: Border.all(color: LogosColors.border),
                     borderRadius: BorderRadius.circular(2),
                   ),
-                  child: const Icon(Icons.menu_book_outlined, color: LogosColors.textDisabled),
+                  child: const Icon(Icons.menu_book_outlined,
+                      color: LogosColors.textDisabled),
                 ),
               ],
             ),

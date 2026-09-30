@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/logos_colors.dart';
+import '../theme/logos_spacing.dart';
 import 'layout_class.dart';
 
 /// Resolves [LayoutClass] from the space actually available to the workspace, and
@@ -109,7 +110,7 @@ class ConstrainedReading extends StatelessWidget {
   const ConstrainedReading({
     super.key,
     required this.child,
-    this.maxWidth = LogosMetrics.maxReadingMeasure,
+    this.maxWidth = LogosMeasured.maxReadingMeasure,
   });
 
   final Widget child;

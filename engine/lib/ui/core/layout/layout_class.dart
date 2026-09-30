@@ -71,5 +71,6 @@ class SlotPolicy {
         stackPanes: c.isStacked,
       );
 
-  static SlotPolicy fromWidth(double width) => SlotPolicy.of(LayoutClass.fromWidth(width));
+  static SlotPolicy fromWidth(double width) =>
+      SlotPolicy.of(LayoutClass.fromWidth(width));
 }

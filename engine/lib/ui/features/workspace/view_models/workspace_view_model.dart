@@ -134,7 +134,10 @@ class WorkspaceViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final tabs = [..._state.tabs, WorkspaceTab(id: id, title: title, showAccessibilityBadge: accessibilityBadge)];
+    final tabs = [
+      ..._state.tabs,
+      WorkspaceTab(id: id, title: title, showAccessibilityBadge: accessibilityBadge)
+    ];
     _state = _state.copyWith(tabs: tabs, activeIndex: tabs.length - 1);
     notifyListeners();
   }

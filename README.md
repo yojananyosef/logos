@@ -64,16 +64,16 @@ Two OpenSpec changes, both validating in strict mode:
 
 | Change | Scope | Tasks |
 |---|---|---|
-| `logos-flutter-clone` | Foundation: shell, adaptive layout, design system, library, reader, search, dashboard, tools | 94, 21 done |
+| `logos-flutter-clone` | Foundation: shell, adaptive layout, design system, library, reader, search, dashboard, tools | 94, 26 done |
 | `logos-full-parity` | Feature parity: guides, workflows, notes, original languages, reference data, AI, sermon, reading programs, documents, media, layouts, settings, export, catalog | 271, 13 done |
 
-Honest progress: **34 of 365 tasks.** The foundation runs and is tested; the rest of the
+Honest progress: **39 of 365 tasks.** The foundation runs and is tested; the rest of the
 parity surface is specified but not built. The task lists mark only what is verified.
 
 ## Verification at this commit
 
 ```
-engine              flutter analyze clean,  19/19 tests
+engine              flutter analyze clean,  43/43 tests
 logos-catalogs      dart analyze clean,      7/7 and 16/16 tests
 openspec            both changes valid in strict mode
 ```
@@ -89,3 +89,4 @@ openspec            both changes valid in strict mode
 ## Toolchain
 
 Flutter 3.24.5 · Dart 3.5.4. `drift` is pinned to 2.23.x because 2.31 requires Dart 3.7.
+The web build compiles clean and bundles the typeface.

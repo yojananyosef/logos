@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/logos_colors.dart';
+import '../theme/logos_spacing.dart';
 import '../theme/logos_theme.dart';
 
 /// A sidebar destination row.
@@ -43,7 +44,7 @@ class _NavItemState extends State<NavItem> {
 
     final row = AnimatedContainer(
       duration: const Duration(milliseconds: 120),
-      constraints: const BoxConstraints(minHeight: LogosColors.minTouchTarget),
+      constraints: const BoxConstraints(minHeight: LogosMeasured.minTouchTarget),
       color: widget.active
           ? LogosColors.surfaceHover
           : (_hovered ? LogosColors.surfaceHover : Colors.transparent),
@@ -64,8 +65,7 @@ class _NavItemState extends State<NavItem> {
                 overflow: TextOverflow.ellipsis,
                 style: LogosTypography.navItem.copyWith(
                   color: fg,
-                  fontWeight:
-                      widget.active ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: widget.active ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),
@@ -120,14 +120,14 @@ class ToolbarSection extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: LogosColors.minTouchTarget),
+          constraints: const BoxConstraints(minHeight: LogosMeasured.minTouchTarget),
           padding: const EdgeInsets.symmetric(horizontal: LogosSpacing.md),
           decoration: BoxDecoration(
             color: active ? LogosColors.surfaceHover : LogosColors.surface,
             border: Border(
               bottom: BorderSide(
                 color: active ? LogosColors.primary : Colors.transparent,
-                width: LogosMetrics.activeIndicatorHeight,
+                width: LogosMeasured.activeIndicatorHeight,
               ),
             ),
           ),

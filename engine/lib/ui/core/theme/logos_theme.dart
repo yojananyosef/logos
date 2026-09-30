@@ -2,23 +2,26 @@ import 'package:flutter/material.dart';
 
 import 'logos_colors.dart';
 
-/// Typography built on Source Sans Pro, the reference typeface.
+/// Text styles built on the bundled Source Sans 3 files.
 ///
-/// The font files are bundled rather than fetched: the reader must work with no
-/// network, and a runtime font fetch would also delay first paint.
+/// The sizes and line heights come from the generated [LogosTypeScale], which reads
+/// them from the reference's own computed body style. The weights are the three the
+/// reference actually loads — the tokens show 400, 600 and 700 in use, with 500 and
+/// 800 never appearing.
 class LogosTypography {
   const LogosTypography._();
 
-  static const String family = 'SourceSansPro';
+  static const String family = LogosTypeScale.family;
 
   static const TextStyle body = TextStyle(
     fontFamily: family,
-    fontSize: 16,
+    fontSize: LogosTypeScale.bodySize,
     fontWeight: FontWeight.w400,
     color: LogosColors.textPrimary,
-    height: 1.5,
+    height: LogosTypeScale.bodyLineHeight,
   );
 
+  /// The 20px semibold used for panel and card titles.
   static const TextStyle title = TextStyle(
     fontFamily: family,
     fontSize: 20,
@@ -26,6 +29,8 @@ class LogosTypography {
     color: LogosColors.textPrimary,
   );
 
+  /// The 12px semibold section label, with the wide tracking the reference uses for
+  /// its all-caps group headings.
   static const TextStyle sectionLabel = TextStyle(
     fontFamily: family,
     fontSize: 12,
@@ -41,18 +46,19 @@ class LogosTypography {
     color: LogosColors.textPrimary,
   );
 
-  /// Scripture body text. Sized by the reader's zoom, not fixed.
+  /// Scripture body text. Sized by the reader's zoom rather than fixed, and set looser
+  /// than interface text so a chapter reads as prose instead of a list of items.
   static TextStyle scripture(double scale) => TextStyle(
         fontFamily: family,
-        fontSize: 16 * scale,
+        fontSize: LogosTypeScale.bodySize * scale,
         fontWeight: FontWeight.w400,
         color: LogosColors.textPrimary,
-        height: 1.6,
+        height: LogosTypeScale.scriptureLineHeight,
       );
 
   static const TextStyle verseNumber = TextStyle(
     fontFamily: family,
-    fontSize: 10,
+    fontSize: LogosTypeScale.verseNumberSize,
     fontWeight: FontWeight.w600,
     color: LogosColors.primary,
   );
@@ -82,16 +88,19 @@ ThemeData buildLogosTheme() {
       titleMedium: LogosTypography.title,
       labelSmall: LogosTypography.sectionLabel,
     ),
-    // Every focusable control must show a visible indicator, not rely on the
-    // platform default, which is easy to lose on the sunken toolbar surface.
-    focusColor: LogosColors.linkHover.withOpacity(0.16),
+    // Every focusable control must show a visible indicator. The platform default is
+    // easy to lose on the sunken toolbar surface, and the reference declares its own
+    // 2px ring in `--bible-study-theme-sidebar-menu-item-active-focus-outline`.
+    focusColor: LogosColors.focusRing,
     cardTheme: const CardTheme(
       color: LogosColors.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         side: BorderSide(color: LogosColors.border),
-        borderRadius: BorderRadius.all(Radius.circular(4)),
+        borderRadius: BorderRadius.all(
+          Radius.circular(LogosDimensions.borderRadiusButton),
+        ),
       ),
     ),
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/components/nav_item.dart';
 import '../../../core/theme/logos_colors.dart';
+import '../../../core/theme/logos_spacing.dart';
 import '../../../core/theme/logos_theme.dart';
 import '../../../../domain/models/workspace_destination.dart';
 import '../view_models/workspace_view_model.dart';
@@ -70,7 +71,8 @@ class WorkspaceSidebar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Padding(
-          padding: EdgeInsets.fromLTRB(LogosSpacing.lg, LogosSpacing.md, LogosSpacing.lg, LogosSpacing.sm),
+          padding: EdgeInsets.fromLTRB(
+              LogosSpacing.lg, LogosSpacing.md, LogosSpacing.lg, LogosSpacing.sm),
           child: Text('ACCIONES RÁPIDAS', style: LogosTypography.sectionLabel),
         ),
         for (final a in QuickAction.values)
@@ -150,7 +152,7 @@ class _SidebarDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Divider(
         height: 1,
-        thickness: LogosMetrics.sidebarDividerWidth,
+        thickness: LogosMeasured.sidebarDividerWidth,
         color: LogosColors.border,
       );
 }
@@ -164,7 +166,7 @@ class IconRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: LogosMetrics.iconRailWidth,
+      width: LogosMeasured.iconRailWidth,
       color: LogosColors.surface,
       child: Column(
         children: [
@@ -205,8 +207,11 @@ class IconRail extends StatelessWidget {
           onSubmitted: (v) => Navigator.of(ctx).pop(v),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(controller.text), child: const Text('Abrir')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text),
+              child: const Text('Abrir')),
         ],
       ),
     );

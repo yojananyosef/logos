@@ -55,8 +55,7 @@ class ResourceDescriptor {
   /// devotional for a critical commentary.
   final String? genre;
 
-  bool get isScripture =>
-      type == ResourceType.bible || type == ResourceType.crossref;
+  bool get isScripture => type == ResourceType.bible || type == ResourceType.crossref;
 }
 
 /// Where a commentary's entries attach.
@@ -94,8 +93,7 @@ class Catalog {
   final String version;
   final List<CatalogEntry> entries;
 
-  Iterable<ResourceDescriptor> get resources =>
-      entries.map((e) => e.resource);
+  Iterable<ResourceDescriptor> get resources => entries.map((e) => e.resource);
 
   List<CatalogEntry> byType(ResourceType t) =>
       entries.where((e) => e.resource.type == t).toList(growable: false);

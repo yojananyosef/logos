@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logos_engine/domain/models/workspace_destination.dart';
 import 'package:logos_engine/ui/app.dart';
 import 'package:logos_engine/ui/core/layout/layout_class.dart';
+import 'package:logos_engine/ui/core/theme/logos_colors.dart';
 import 'package:logos_engine/ui/features/workspace/view_models/workspace_view_model.dart';
 
 /// Wraps the app at a fixed window size, which is how the responsive behaviour is
@@ -102,8 +103,7 @@ void main() {
   });
 
   group('tabs', () {
-    testWidgets('opening a resource creates a tab and makes it active',
-        (tester) async {
+    testWidgets('opening a resource creates a tab and makes it active', (tester) async {
       await pumpAt(tester, const Size(1440, 900));
       final vm = WorkspaceViewModel();
       vm.openTab('rv', 'RVR60', accessibilityBadge: true);
@@ -113,8 +113,7 @@ void main() {
       expect(vm.state.activeTab!.showAccessibilityBadge, isTrue);
     });
 
-    testWidgets('opening the same resource twice does not duplicate it',
-        (tester) async {
+    testWidgets('opening the same resource twice does not duplicate it', (tester) async {
       final vm = WorkspaceViewModel();
       vm.openTab('rv', 'RVR60');
       vm.openTab('otro', 'JFB');
@@ -166,6 +165,8 @@ void main() {
     });
   });
 
+  _tabIndicatorTests();
+
   group('close all panels', () {
     test('clears every tab and returns to the dashboard', () {
       final vm = WorkspaceViewModel();
@@ -175,6 +176,58 @@ void main() {
 
       expect(vm.state.tabs, isEmpty);
       expect(vm.state.destination, WorkspaceDestination.home);
+    });
+  });
+}
+
+/// The open tab's indicator is a specific colour from the reference, and getting it
+/// wrong produces something that looks plausible. Asserted against the painted border
+/// rather than against the source constant, so a change to the widget is caught and not
+/// just a change to the palette.
+void _tabIndicatorTests() {
+  group('tab indicator', () {
+    testWidgets('the open tab is marked with the reference accent, not the brand blue',
+        (tester) async {
+      await pumpAt(tester, const Size(1440, 900));
+
+      final vm = WorkspaceViewModel();
+      vm.openTab('jfb', 'JFB');
+      await tester.pumpWidget(harness(size: const Size(1440, 900)));
+
+      // Open a tab through the real interaction path rather than by injecting state,
+      // so the assertion covers the wiring and not just the constant.
+      final sidebar = find.text('Abrir un comentario');
+      expect(sidebar, findsOneWidget);
+      await tester.tap(sidebar);
+      await tester.pumpAndSettle();
+
+      // The tab strip renders a bottom border on the active tab. Its colour is the
+      // one the reference declares in `panel-tab-active-border-color`.
+      final borders = <BorderSide>[];
+      for (final container in tester.widgetList<Container>(find.byType(Container))) {
+        final decoration = container.decoration;
+        if (decoration is! BoxDecoration) continue;
+        final border = decoration.border;
+        if (border is! Border) continue;
+        if (border.bottom.color != LogosColors.border) {
+          borders.add(border.bottom);
+        }
+      }
+
+      expect(
+        borders.any((b) => b.color == LogosColors.tabActiveAccent),
+        isTrue,
+        reason: 'the open tab must carry tabActiveAccent '
+            '(${LogosColors.tabActiveAccent}); found '
+            '${borders.map((b) => b.color).toSet()}',
+      );
+    });
+
+    test('the accent is genuinely different from the brand primary', () {
+      // Guards the specific mistake: reaching for the primary blue because it is the
+      // obvious brand colour. They are different in the reference.
+      expect(LogosColors.tabActiveAccent, isNot(LogosColors.primary));
+      expect(LogosColors.tabActiveAccent, const Color(0xFFFF6600));
     });
   });
 }

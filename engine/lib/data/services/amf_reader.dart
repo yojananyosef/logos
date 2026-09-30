@@ -325,7 +325,8 @@ class AmfIntegrityChecker {
       if (verses.isEmpty) return;
       final sorted = [...verses]..sort();
       if (sorted.first != 1) {
-        failures.add(IntegrityFailure(key, 'starts at verse ${sorted.first}, expected 1'));
+        failures
+            .add(IntegrityFailure(key, 'starts at verse ${sorted.first}, expected 1'));
         return;
       }
       for (var i = 1; i < sorted.length; i++) {

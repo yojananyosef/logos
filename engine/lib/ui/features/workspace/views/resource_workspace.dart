@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/components/nav_item.dart';
 import '../../../core/layout/adaptive_layout.dart';
 import '../../../core/theme/logos_colors.dart';
+import '../../../core/theme/logos_spacing.dart';
 import '../../../core/theme/logos_theme.dart';
 import '../../../../domain/models/workspace_destination.dart';
 import '../view_models/workspace_view_model.dart';
@@ -120,13 +121,16 @@ class _Tab extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: LogosColors.minTouchTarget),
+            constraints: const BoxConstraints(minHeight: LogosMeasured.minTouchTarget),
             padding: const EdgeInsets.symmetric(horizontal: LogosSpacing.md),
             decoration: BoxDecoration(
               border: Border(
+                // The reference marks the open panel tab with `panel-tab-active-border-color`,
+                // which is #ff6600 — a warm accent, not the brand blue. The blue
+                // belongs to the active toolbar icon, which is a different element.
                 bottom: BorderSide(
-                  color: active ? LogosColors.primary : LogosColors.border,
-                  width: LogosMetrics.activeIndicatorHeight,
+                  color: active ? LogosColors.tabActiveAccent : LogosColors.border,
+                  width: LogosMeasured.activeIndicatorHeight,
                 ),
                 right: const BorderSide(color: LogosColors.border),
               ),
@@ -146,7 +150,7 @@ class _Tab extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
-                      color: LogosColors.infoPill,
+                      color: LogosColors.documentLink,
                       borderRadius: BorderRadius.circular(2),
                     ),
                     child: const Text('A', style: LogosTypography.verseNumber),
@@ -155,8 +159,8 @@ class _Tab extends StatelessWidget {
                 const SizedBox(width: LogosSpacing.xs),
                 // 44dp close target even though the glyph is small.
                 SizedBox(
-                  width: LogosColors.minTouchTarget,
-                  height: LogosColors.minTouchTarget,
+                  width: LogosMeasured.minTouchTarget,
+                  height: LogosMeasured.minTouchTarget,
                   child: IconButton(
                     tooltip: 'Cerrar ${tab.title}',
                     padding: EdgeInsets.zero,

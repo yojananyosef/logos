@@ -37,8 +37,7 @@ enum LicenseKind {
   ///
   /// Contagious: one such resource taints any catalog containing it. This is why the
   /// build refuses to mix share-alike content into a closed-distribution target.
-  bool get isShareAlike =>
-      this == LicenseKind.ccBySa || this == LicenseKind.ccByNc;
+  bool get isShareAlike => this == LicenseKind.ccBySa || this == LicenseKind.ccByNc;
 
   /// True when commercial redistribution is forbidden.
   bool get forbidsCommercialUse => this == LicenseKind.ccByNc;
@@ -119,6 +118,5 @@ class LicenseInfo {
       );
 
   @override
-  String toString() =>
-      'LicenseInfo(${kind?.name ?? 'UNRESOLVED'}, release=$releaseDate)';
+  String toString() => 'LicenseInfo(${kind?.name ?? 'UNRESOLVED'}, release=$releaseDate)';
 }

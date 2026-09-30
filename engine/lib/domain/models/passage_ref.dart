@@ -32,8 +32,7 @@ class PassageRef implements Comparable<PassageRef> {
   int get hashCode => Object.hash(bookOsis, chapter, verse, verseEnd);
 
   @override
-  String toString() =>
-      '$bookOsis $chapter:$verse${isRange ? '-$verseEnd' : ''}';
+  String toString() => '$bookOsis $chapter:$verse${isRange ? '-$verseEnd' : ''}';
 }
 
 /// Parses the reference syntax the search feature documents, e.g. `Jn 3:16`,

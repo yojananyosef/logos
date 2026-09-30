@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/layout/adaptive_layout.dart';
 import 'core/layout/layout_class.dart';
 import 'core/theme/logos_colors.dart';
+import 'core/theme/logos_spacing.dart';
 import 'core/theme/logos_theme.dart';
 import '../domain/models/workspace_destination.dart';
 import 'features/workspace/view_models/workspace_view_model.dart';
@@ -54,9 +55,7 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
       builder: (context, layoutClass) {
         return Scaffold(
           key: _drawerKey,
-          drawer: layoutClass.isCompact
-              ? _drawerBody(vm, state.sidebarCollapsed)
-              : null,
+          drawer: layoutClass.isCompact ? _drawerBody(vm, state.sidebarCollapsed) : null,
           appBar: _topBar(layoutClass),
           body: SafeArea(
             top: false,
@@ -68,20 +67,19 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
                 if (!layoutClass.isCompact) ...[
                   SizedBox(
                     width: state.sidebarCollapsed
-                        ? LogosMetrics.sidebarCollapsedWidth
-                        : LogosMetrics.sidebarExpandedWidth,
+                        ? LogosMeasured.sidebarCollapsedWidth
+                        : LogosMeasured.sidebarExpandedWidth,
                     child: WorkspaceSidebar(
                       viewModel: vm,
                       collapsed: state.sidebarCollapsed,
                     ),
                   ),
                   const VerticalDivider(
-                    width: LogosMetrics.sidebarDividerWidth,
+                    width: LogosMeasured.sidebarDividerWidth,
                     color: LogosColors.border,
                   ),
                 ],
-                if (layoutClass.isCompact)
-                  _drawerButton(),
+                if (layoutClass.isCompact) _drawerButton(),
                 Expanded(child: _body(vm)),
               ],
             ),
@@ -141,10 +139,12 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
       titleSpacing: layoutClass.isCompact ? 0 : LogosSpacing.lg,
       title: Row(
         children: [
-          Text('Logos', style: LogosTypography.title.copyWith(color: LogosColors.primary)),
+          Text('Logos',
+              style: LogosTypography.title.copyWith(color: LogosColors.primary)),
           if (!layoutClass.isCompact) ...[
             const SizedBox(width: LogosSpacing.md),
-            Text('Logos Inicios', style: LogosTypography.body.copyWith(color: LogosColors.textSecondary)),
+            Text('Logos Inicios',
+                style: LogosTypography.body.copyWith(color: LogosColors.textSecondary)),
           ],
         ],
       ),
@@ -155,7 +155,8 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
     final vm = ref.read(workspaceViewModelProvider);
     // A reference opens the reader; anything else opens search. The distinction is the
     // documented behaviour of the `Pasaje o tema` field.
-    final looksLikeReference = RegExp(r'^[1-3]?\s?[A-Za-záéíóúñ]+\.?\s*\d+').hasMatch(query);
+    final looksLikeReference =
+        RegExp(r'^[1-3]?\s?[A-Za-záéíóúñ]+\.?\s*\d+').hasMatch(query);
     if (looksLikeReference) {
       vm.openTab('passage-$query', query, accessibilityBadge: true);
     } else {
