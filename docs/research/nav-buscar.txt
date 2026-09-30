@@ -1,0 +1,60 @@
+Ir al espacio de trabajo
+Panel de Control
+Biblioteca
+Buscar
+Biblia
+Asistente de estudio
+Enciclopedia bíblica
+Guías de Estudio
+Notas
+Herramientas
+Acciones Rápidas
+Abrir un comentario
+Abrir una Biblia de estudio
+Comparar versiones de la Biblia
+Abrir un diccionario bíblico
+Abrir el devocional de hoy
+Centro de ayuda
+Entornos
+Cerrar todos los paneles
+Ingresar
+RVR60
+Buscar
+JFB
+Todo
+Biblia
+Libros
+Si escribe dos palabras (por ejemplo,  amor al prójimo), se realizará una búsqueda de artículos que contengan ambas palabras.
+Para buscar cualquiera de las dos palabras, utilice amor O prójimo.
+Ponga las frases exactas entre comillas: "hijo del Hombre".
+Un asterisco representa cualquier número de caracteres en una palabra, por ejemplo. Crist* coincide con Cristo o cristiano
+Un signo de interrogación representa un solo carácter en una palabra, por ejemplo. s?n coincide con el pecado, el hijo y el sol
+Busque referencias bíblicas como esta: Biblia:"Jn 3:16".
+Operadores básicos
+solo una palabra u otra:Cristo O Jesús
+Ambas palabras:Cristo Y JesúsCristo Jesús
+Una palabra, pero no la otra:Cristo NO Jesús
+Una palabra antes que otra:Cristo ANTES Jesús
+Una palabra después de otra:Cristo DESPUÉS Jesús
+Una palabra cerca de otra:Cristo CERCA JesúsCristo DENTRO 2 PALABRAS JesúsCristo DENTRO 10 CARACT Jesús
+Buscar palabras clave
+Referencias bíblicas:Biblia:"Jn 3:16"evangelismo CERCA Biblia:"Juan 3"
+Encuentre cualquier referencia a los versículos dentro de Juan 3, o el capítulo en su totalidad:Biblia:"Juan 3"
+Encuentre una referencia exacta a Juan capítulo 3:Biblia:="Juan 3"
+Ayuda adicional
+Manual de Ayuda
+Wiki editado por usuarios
+Grupo de búsqueda Logos
+Inicio
+Búsqueda
+Notas
+Formato
+Vista
+Compartir
+Contenido
+Historia
+Artículo
+Conjunto de enlaces
+The Gospel according to John
+Chapter 1
+Para acceder a este recurso con tecnología de asistencia, active el modo de vista limitada en la configuración.

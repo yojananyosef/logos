@@ -1,0 +1,5 @@
+# Local tooling and scratch
+tmp/
+scratch/
+*.log
+.DS_Store
