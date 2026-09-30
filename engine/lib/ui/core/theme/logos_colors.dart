@@ -156,6 +156,27 @@ class LogosColors {
 
   /// #000000 — search-hit-font-color
   static const Color searchHit = Color(0xFF000000);
+
+  /// #000000 — search-hit-text-color
+  static const Color searchHitText = Color(0xFF000000);
+
+  /// #FF9933 — search-hit-default-background-color
+  static const Color searchHitBackground = Color(0xFFFF9933);
+
+  /// #FFD86A — search-hit-active-background-color
+  static const Color searchHitActiveBackground = Color(0xFFFFD86A);
+
+  /// #EAEDF2 — search-panel-syntax-search-hit-background-color
+  static const Color searchChip = Color(0xFFEAEDF2);
+
+  /// #154AC9 — search-panel-selected-result-border-color
+  static const Color searchSelectedBorder = Color(0xFF154AC9);
+
+  /// #4797FF — search-panel-active-result-border-color
+  static const Color searchActiveBorder = Color(0xFF4797FF);
+
+  /// #CC3333 — search-panel-clause-error-text-color
+  static const Color searchClauseError = Color(0xFFCC3333);
 }
 
 /// Lengths from the captured custom properties.

@@ -88,6 +88,40 @@ class BibleRepository {
     return out;
   }
 
+  /// The book names the reference parser should accept, keyed by OSIS code.
+  ///
+  /// Learned from the modules that are actually installed rather than from a hard-coded
+  /// table, because the set of accepted spellings belongs to the module: `Jn` and `Juan`
+  /// are Spanish renderings recorded in that module's `books` table, and a table written
+  /// into the app would drift from the content it has to address.
+  ///
+  /// A module that cannot be opened is skipped for the same reason a search skips it — one
+  /// unreadable resource must not cost the user every other book's names.
+  Future<Map<String, List<String>>> bookAliases() async {
+    final aliases = <String, List<String>>{};
+
+    for (final module in await listInstalled()) {
+      if (module.type != ResourceType.bible) continue;
+      final OpenedModule opened;
+      try {
+        opened = await open(module.id);
+      } on Object {
+        continue;
+      }
+      for (final book in opened.books) {
+        final names = aliases.putIfAbsent(book.osisCode.toLowerCase(), () => []);
+        for (final name in [book.osisCode, book.abbreviation, book.name]) {
+          final trimmed = name.trim();
+          if (trimmed.isEmpty) continue;
+          if (!names.any((n) => n.toLowerCase() == trimmed.toLowerCase())) {
+            names.add(trimmed);
+          }
+        }
+      }
+    }
+    return aliases;
+  }
+
   /// Opens a module, verifying it and checking its integrity.
   ///
   /// [expectedSha256] comes from the catalog. Passing null skips verification, which is

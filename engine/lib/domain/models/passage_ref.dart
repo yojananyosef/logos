@@ -48,6 +48,11 @@ class PassageRefParser {
   );
 
   /// Returns null when [raw] is not a reference at all.
+  ///
+  /// A reference with no verse yields [verse] 0, which is how "the whole chapter" is
+  /// represented. Returning null there instead would make `Biblia:"Juan 3"` — one of the
+  /// examples in the help panel — indistinguishable from a mistyped book name, and the
+  /// user would be told a valid reference was invalid.
   PassageRef? tryParse(String raw) {
     final m = _pattern.firstMatch(raw);
     if (m == null) return null;
@@ -58,8 +63,7 @@ class PassageRefParser {
     final osis = _resolve(m.group(1)!);
     if (osis == null) return null;
 
-    final verse = int.tryParse(m.group(3) ?? '');
-    if (verse == null) return null;
+    final verse = int.tryParse(m.group(3) ?? '') ?? 0;
 
     return PassageRef(osis, chapter, verse, verseEnd: int.tryParse(m.group(4) ?? ''));
   }

@@ -62,6 +62,20 @@ class LogosTypography {
     fontWeight: FontWeight.w600,
     color: LogosColors.primary,
   );
+
+  /// A query example, as the syntax help panel renders it.
+  ///
+  /// Monospaced and letter-spaced, because these strings are meant to be read as syntax
+  /// rather than as prose. An operator written in the same face as the sentence around it
+  /// reads as an ordinary word, and `Cristo Y Jesús` looks like a name.
+  static const TextStyle code = TextStyle(
+    fontFamily: 'monospace',
+    fontFamilyFallback: <String>['Source Sans 3', 'monospace'],
+    fontSize: LogosTypeScale.bodySize,
+    fontWeight: FontWeight.w500,
+    color: LogosColors.textPrimary,
+    letterSpacing: 0.2,
+  );
 }
 
 ThemeData buildLogosTheme() {

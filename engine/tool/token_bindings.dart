@@ -87,7 +87,20 @@ const colorBindings = <String, String>{
   'segmentApproved': 'text-alignment-document-segment-approved-color',
   'textBoxBackground': 'text-box-background-color',
   'redLetters': 'red-letters-font-color',
+
+  // --- search ---
+  // The hit background is orange, not the brand blue: a highlight sits inside body text
+  // and has to read as a mark rather than as a link. `searchHit` above is the *font*
+  // colour, which is black — binding the two to one another would have produced a chip
+  // with orange text on an orange background.
   'searchHit': 'search-hit-font-color',
+  'searchHitText': 'search-hit-text-color',
+  'searchHitBackground': 'search-hit-default-background-color',
+  'searchHitActiveBackground': 'search-hit-active-background-color',
+  'searchChip': 'search-panel-syntax-search-hit-background-color',
+  'searchSelectedBorder': 'search-panel-selected-result-border-color',
+  'searchActiveBorder': 'search-panel-active-result-border-color',
+  'searchClauseError': 'search-panel-clause-error-text-color',
 };
 
 /// Lengths resolved from a captured custom property written as `Npx`.

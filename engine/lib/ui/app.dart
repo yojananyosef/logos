@@ -9,8 +9,10 @@ import 'core/theme/logos_spacing.dart';
 import 'core/theme/logos_theme.dart';
 import '../domain/models/catalog.dart';
 import '../domain/models/workspace_destination.dart';
+import '../domain/search/search_results.dart';
 import 'features/library/views/library_view.dart';
 import 'features/reader/views/bible_reader_view.dart';
+import 'features/search/views/search_view.dart';
 import 'features/workspace/view_models/workspace_view_model.dart';
 import 'features/workspace/views/home_dashboard.dart';
 import 'features/workspace/views/resource_workspace.dart';
@@ -118,7 +120,18 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
   Widget _body(WorkspaceViewModel vm) {
     // The workspace occupies the content area; the destinations that are not resource
     // panels render their own surfaces inside it.
+    final reader = _readerModuleId;
     if (vm.state.tabs.isNotEmpty) {
+      // Checked inside the tabs branch, like the resource path below it: a reader is only
+      // shown because a tab is open, so navigating to a destination must take it away
+      // again rather than leave the reader covering the screen.
+      if (reader != null) {
+        return _ReaderPanel(
+          moduleId: reader,
+          osisCode: _readerPassage?.osisCode,
+          chapter: _readerPassage?.chapter,
+        );
+      }
       final resource = _panelResource;
       if (resource != null && resource.type == ResourceType.bible) {
         return _ReaderPanel(moduleId: resource.id);
@@ -135,8 +148,30 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
           viewModel: ref.watch(libraryViewModelProvider),
           onOpenResource: _openResource,
         ),
+      // Watched rather than read, so the pane rebuilds when the search finishes. The
+      // search runs off a keystroke and the ViewModel only announces it by notifying, so
+      // a `read` here would leave the user typing into a pane that never answers.
+      WorkspaceDestination.search => SearchView(
+          viewModel: ref.watch(searchViewModelProvider),
+          onOpenResult: _openSearchResult,
+        ),
       _ => _PlaceholderSurface(destination: vm.state.destination),
     };
+  }
+
+  /// Opens a search result in the reader, at the chapter it names.
+  ///
+  /// The reader addresses a chapter, not a single verse, so the result lands at the top of
+  /// its chapter rather than scrolled to the line. That limit belongs to the reader; the
+  /// result knows the exact verse and passes what the reader can act on.
+  void _openSearchResult(SearchResult result) {
+    final position = result.reference;
+    final vm = ref.read(workspaceViewModelProvider);
+    vm.openTab(result.moduleId, result.moduleName.isEmpty ? result.label : result.moduleName);
+    setState(() {
+      _readerModuleId = result.moduleId;
+      _readerPassage = (osisCode: position.bookOsis, chapter: position.chapter);
+    });
   }
 
   /// Opens a resource in a tab, choosing the surface that can actually read it.
@@ -149,10 +184,22 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
     final vm = ref.read(workspaceViewModelProvider);
     vm.openTab(
         resource.id, resource.shortName.isEmpty ? resource.name : resource.shortName);
-    setState(() => _panelResource = resource);
+    setState(() {
+      _panelResource = resource;
+      // A search result opened a reader directly; clearing it lets the library own the
+      // content area again, which is otherwise left showing the wrong module.
+      _readerModuleId = null;
+      _readerPassage = null;
+    });
   }
 
   ResourceDescriptor? _panelResource;
+
+  /// The module a search result opened, which takes precedence over [panelResource].
+  String? _readerModuleId;
+
+  /// Where in that module the reader should open, when the search named a passage.
+  ({String osisCode, int chapter})? _readerPassage;
 
   PreferredSizeWidget _topBar(LayoutClass layoutClass) {
     return AppBar(
@@ -236,9 +283,13 @@ class _PlaceholderSurface extends StatelessWidget {
 /// reader needs the full width, and squeezing it beside the tab chrome would leave a
 /// column too narrow to read scripture in.
 class _ReaderPanel extends ConsumerStatefulWidget {
-  const _ReaderPanel({required this.moduleId});
+  const _ReaderPanel({required this.moduleId, this.osisCode, this.chapter});
 
   final String moduleId;
+
+  /// Where to open, when the caller named a passage rather than just a module.
+  final String? osisCode;
+  final int? chapter;
 
   @override
   ConsumerState<_ReaderPanel> createState() => _ReaderPanelState();
@@ -251,7 +302,11 @@ class _ReaderPanelState extends ConsumerState<_ReaderPanel> {
     // Opening after the first frame, because it notifies listeners and the provider has
     // to be read from a mounted widget.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(readerViewModelProvider(widget.moduleId).notifier).open(widget.moduleId);
+      ref.read(readerViewModelProvider(widget.moduleId).notifier).open(
+            widget.moduleId,
+            osisCode: widget.osisCode,
+            chapter: widget.chapter ?? 1,
+          );
     });
   }
 

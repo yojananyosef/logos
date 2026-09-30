@@ -14,10 +14,18 @@ import 'package:sqlite3/sqlite3.dart';
 /// FTS5 index. None of that is exercised by a mock, and all of it is exactly where a
 /// format implementation goes wrong.
 class ModuleBuilder {
-  ModuleBuilder(this.id, {this.name = 'Test Bible'});
+  ModuleBuilder(this.id, {this.name = 'Test Bible', this.type = 'bible'});
 
   final String id;
   final String name;
+
+  /// The resource type the manifest declares.
+  ///
+  /// Set to `commentary` or another non-scripture type to exercise the scope rules. A
+  /// commentary carries `entries` rather than `verses` in the real format; this builder
+  /// always writes verses, so a non-scripture fixture exercises *scoping*, not the
+  /// monograph reader, which is not implemented.
+  final String type;
 
   /// `book:chapter:verse` entries keyed by OSIS code, in the order they should appear.
   final Map<String, Map<int, Map<int, String>>> books =
@@ -90,7 +98,7 @@ class ModuleBuilder {
   "schemaVersion": 1,
   "minReaderVersion": 1,
   "id": "$id",
-  "type": "bible",
+  "type": "$type",
   "name": "$name",
   "shortName": "$id",
   "language": "en",

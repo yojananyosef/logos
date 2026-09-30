@@ -298,25 +298,42 @@ class AmfBibleDao {
   ///
   /// `verses_fts` is an external-content table, so its `rowid` is `verses.rowid`; the
   /// join has to go through that rather than through a shared key.
-  Future<List<AmfSearchHit>> search(String query, {int limit = 50}) async {
+  /// Runs [query] against the module's own index.
+  ///
+  /// [query] is a raw FTS5 `MATCH` expression, not a user query. The user's query has
+  /// already been parsed into a tree, and this is the retrieval half of evaluating it —
+  /// the part the index is genuinely good at, which is narrowing 31,000 verses to a few
+  /// hundred candidates.
+  ///
+  /// The caller then applies [SearchMatcher] to the returned text. The two halves are not
+  /// redundant: the index cannot express proximity, ordering or wildcard shapes, so a
+  /// result that satisfies the index is not yet a result that satisfies the query.
+  ///
+  /// FTS5 has no `NEAR` in this build — `a NEAR b` parses and matches nothing — and no `?`
+  /// at all, where `cr?st` is a syntax error. [buildMatchExpression] is what keeps those
+  /// out of the string handed to the engine.
+  Future<List<AmfSearchHit>> search(String query, {int limit = 200}) async {
+    if (query.trim().isEmpty) return const [];
     final rows = await _query(
       _db,
-      "SELECT b.osisCode, v.chapter, v.verse, "
-      "       snippet(verses_fts, 0, char(1), char(2), char(3), 12) AS snip "
-      "FROM verses_fts "
-      "JOIN verses v ON v.rowid = verses_fts.rowid "
-      "JOIN books b ON b.bookId = v.bookId "
-      "WHERE verses_fts MATCH ? ORDER BY rank LIMIT ?",
+      'SELECT b.osisCode, b.name AS bookName, v.chapter, v.verse, v.verseEnd, v.text '
+      'FROM verses_fts '
+      'JOIN verses v ON v.rowid = verses_fts.rowid '
+      'JOIN books b ON b.bookId = v.bookId '
+      'WHERE verses_fts MATCH ? ORDER BY rank LIMIT ?',
       [query, limit],
     );
-    return rows
-        .map((r) => AmfSearchHit(
-              osisCode: r.as<String>('osisCode'),
-              chapter: r.as<int>('chapter'),
-              verse: r.as<int>('verse'),
-              snippet: (r.values['snip'] as String?) ?? '',
-            ))
-        .toList(growable: false);
+    return [
+      for (final r in rows)
+        AmfSearchHit(
+          osisCode: r.as<String>('osisCode'),
+          bookName: r.as<String>('bookName'),
+          chapter: r.as<int>('chapter'),
+          verse: r.as<int>('verse'),
+          verseEnd: r.values['verseEnd'] as int?,
+          text: r.as<String>('text'),
+        ),
+    ];
   }
 }
 
@@ -354,18 +371,28 @@ class AmfVerse {
   final String text;
 }
 
+/// One row a module's index returned, with the whole text rather than a snippet.
+///
+/// The full text is fetched because the caller has to measure positions in it: proximity
+/// and ordering cannot be decided from a snippet, and highlighting needs the matched words
+/// to be in context. Verses are short enough that this costs nothing over a snippet, and
+/// an `entries` row of a commentary is a paragraph at worst.
 class AmfSearchHit {
   const AmfSearchHit({
     required this.osisCode,
+    required this.bookName,
     required this.chapter,
     required this.verse,
-    required this.snippet,
+    required this.text,
+    this.verseEnd,
   });
 
   final String osisCode;
+  final String bookName;
   final int chapter;
   final int verse;
-  final String snippet;
+  final int? verseEnd;
+  final String text;
 }
 
 /// Verifies that every chapter in a module is contiguous 1..N with no duplicates and
