@@ -3,3 +3,8 @@ tmp/
 scratch/
 *.log
 .DS_Store
+
+# Separate repository: the content catalog is versioned on its own cadence because
+# content changes on licence timelines, not on release cadence.
+# See openspec/changes/logos-full-parity/design.md, decision D0.
+logos-catalogs/
