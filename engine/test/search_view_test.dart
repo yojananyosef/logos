@@ -92,7 +92,7 @@ void main() {
     return ProviderScope(
       overrides: [searchViewModelProvider.overrideWith((ref) => vm)],
       child: MaterialApp(
-        theme: buildLogosTheme(),
+        theme: buildLogosTheme(splashFactory: InkRipple.splashFactory),
         home: const Scaffold(body: _SearchPane()),
       ),
     );

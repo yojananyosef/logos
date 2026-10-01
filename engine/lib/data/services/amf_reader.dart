@@ -287,6 +287,100 @@ class AmfBibleDao {
         text: r.as<String>('text'),
       );
 
+  /// Whether this module carries cross-references at all.
+  ///
+  /// Feature detection rather than an assumption, because the table was added after the
+  /// first modules were built and a module predating it is a normal thing to have
+  /// installed. Asking `sqlite_master` costs one indexed lookup and turns "this module has
+  /// no references" into an empty list instead of a `no such table` error on every chapter.
+  Future<bool> get hasCrossReferences async {
+    final rows = await _query(
+      _db,
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'crossReferences'",
+    );
+    return rows.isNotEmpty;
+  }
+
+  /// Every cross-reference anchored in one chapter, grouped by verse and then by phrase.
+  ///
+  /// The whole chapter in one query, because that is the unit the reader shows: opening a
+  /// chapter should not issue a query per verse, and a reader that did would be visibly
+  /// slower on John 1 than on Obadiah for no reason the user could explain.
+  Future<Map<int, List<AmfAnchoredReferences>>> chapterCrossReferences(
+    String osisCode,
+    int chapter,
+  ) async {
+    if (!await hasCrossReferences) return const {};
+
+    final rows = await _query(
+      _db,
+      'SELECT x.fromBookId, x.fromChapter, x.fromVerse, x.toBookId, x.toChapter, '
+      '       x.toVerse, x.toVerseEnd, x.anchor, x.sortOrder '
+      'FROM crossReferences x '
+      'JOIN books b ON b.bookId = x.fromBookId '
+      'WHERE b.osisCode = ? AND x.fromChapter = ? '
+      'ORDER BY x.fromVerse, x.sortOrder',
+      [osisCode, chapter],
+    );
+
+    // Keyed by verse, then by anchor, preserving the order rows arrive in. A `Map` alone
+    // would lose the source order of two anchors in the same verse, and the reference shows
+    // them in the order the translator's source did.
+    final byVerse = <int, List<AmfAnchoredReferences>>{};
+    final anchorsByVerse = <int, Map<String, List<AmfCrossReference>>>{};
+
+    for (final r in rows) {
+      final ref = AmfCrossReference(
+        fromBookId: r.as<int>('fromBookId'),
+        fromChapter: r.as<int>('fromChapter'),
+        fromVerse: r.as<int>('fromVerse'),
+        toBookId: r.as<int>('toBookId'),
+        toChapter: r.as<int>('toChapter'),
+        toVerse: r.as<int>('toVerse'),
+        toVerseEnd: r.values['toVerseEnd'] as int?,
+        anchor: r.as<String>('anchor'),
+        sortOrder: r.as<int>('sortOrder'),
+      );
+      final verse = ref.fromVerse;
+      final groups = anchorsByVerse.putIfAbsent(verse, () => <String, List<AmfCrossReference>>{});
+      groups.putIfAbsent(ref.anchor, () => []).add(ref);
+    }
+
+    // Converted only once every group is filled. Building the list as rows arrive would
+    // capture the first anchor's group and then never add the second, so a verse with two
+    // anchored phrases would silently render one of them.
+    for (final entry in anchorsByVerse.entries) {
+      byVerse[entry.key] = [
+        for (final group in entry.value.entries)
+          AmfAnchoredReferences(anchor: group.key, references: group.value),
+      ];
+    }
+
+    return byVerse;
+  }
+
+  /// Every cross-reference in the module, for the build-time target check.
+  Future<List<AmfCrossReference>> allCrossReferences() async {
+    if (!await hasCrossReferences) return const [];
+    final rows = await _query(_db, CrossReferenceSchema.selectAll);
+    return [
+      for (final r in rows)
+        AmfCrossReference(
+          fromBookId: r.as<int>('fromBookId'),
+          fromChapter: r.as<int>('fromChapter'),
+          fromVerse: r.as<int>('fromVerse'),
+          toBookId: r.as<int>('toBookId'),
+          toChapter: r.as<int>('toChapter'),
+          toVerse: r.as<int>('toVerse'),
+          toVerseEnd: r.values['toVerseEnd'] as int?,
+          anchor: r.as<String>('anchor'),
+          // `selectAll` omits `sortOrder`; the integrity check does not care where a
+          // reference sat in the verse, only that it points somewhere real.
+          sortOrder: 0,
+        ),
+    ];
+  }
+
   /// FTS5 search over a module.
   ///
   /// The tokeniser is `unicode61 remove_diacritics 2`, so a query finds a verse whether
@@ -316,7 +410,8 @@ class AmfBibleDao {
     if (query.trim().isEmpty) return const [];
     final rows = await _query(
       _db,
-      'SELECT b.osisCode, b.name AS bookName, v.chapter, v.verse, v.verseEnd, v.text '
+      'SELECT b.osisCode, b.name AS bookName, b.bookOrder, v.chapter, v.verse, '
+      '       v.verseEnd, v.text '
       'FROM verses_fts '
       'JOIN verses v ON v.rowid = verses_fts.rowid '
       'JOIN books b ON b.bookId = v.bookId '
@@ -328,6 +423,7 @@ class AmfBibleDao {
         AmfSearchHit(
           osisCode: r.as<String>('osisCode'),
           bookName: r.as<String>('bookName'),
+          bookOrder: r.as<int>('bookOrder'),
           chapter: r.as<int>('chapter'),
           verse: r.as<int>('verse'),
           verseEnd: r.values['verseEnd'] as int?,
@@ -381,6 +477,7 @@ class AmfSearchHit {
   const AmfSearchHit({
     required this.osisCode,
     required this.bookName,
+    required this.bookOrder,
     required this.chapter,
     required this.verse,
     required this.text,
@@ -389,10 +486,105 @@ class AmfSearchHit {
 
   final String osisCode;
   final String bookName;
+
+  /// The book's canonical position in the canon.
+  ///
+  /// Carried because a result list has to be in reading order, and `osisCode` sorted as a
+  /// string puts Genesis before John and Psalms after both — `Gen` < `John` < `Ps` happens to
+  /// be right, but `Exod` < `Gen` < `Isa` < `John` is not, and a search that returns John
+  /// before Exodus is not something a reader of scripture can follow.
+  final int bookOrder;
+
   final int chapter;
   final int verse;
   final int? verseEnd;
   final String text;
+}
+
+/// The `crossReferences` table, as the reader and every builder create it.
+///
+/// Kept as one string so the reader, the test fixture builder and the catalog repository's
+/// assembler cannot drift: the table is what a link is read out of, and three copies of the
+/// DDL would eventually be three slightly different tables, with the mismatch showing up as
+/// a missing link rather than as an error.
+///
+/// `IF NOT EXISTS` because a module may legitimately have none, and `anchor` is required
+/// because a reference with nothing to attach it to cannot be rendered in place.
+class CrossReferenceSchema {
+  const CrossReferenceSchema._();
+
+  static const String create = '''
+CREATE TABLE IF NOT EXISTS crossReferences (
+  fromBookId INTEGER NOT NULL,
+  fromChapter INTEGER NOT NULL,
+  fromVerse INTEGER NOT NULL,
+  toBookId INTEGER NOT NULL,
+  toChapter INTEGER NOT NULL,
+  toVerse INTEGER NOT NULL,
+  toVerseEnd INTEGER,
+  anchor TEXT NOT NULL,
+  sortOrder INTEGER NOT NULL
+)''';
+
+  /// On the *source* verse, because that is how a chapter is read: every reference the
+  /// chapter holds, fetched in one query, ordered by where it falls in the verse.
+  static const String index =
+      'CREATE INDEX IF NOT EXISTS crossReferences_from ON '
+      'crossReferences (fromBookId, fromChapter, fromVerse)';
+
+  /// Every reference in a module, for the build-time check that each target exists.
+  static const String selectAll = 'SELECT fromBookId, fromChapter, fromVerse, '
+      'toBookId, toChapter, toVerse, toVerseEnd, anchor FROM crossReferences '
+      'ORDER BY fromBookId, fromChapter, fromVerse, sortOrder';
+}
+
+/// One cross-reference as a module stores it: a phrase in a verse, and a passage it points
+/// at.
+///
+/// Phrase-level rather than verse-level, because that is what the source data is. TSK gives
+/// every reference a phrase it hangs off, so `John 1:1` "Word" and the same verse's "with
+/// God" are different references to different passages. Storing one row per verse would
+/// throw that away and leave the reader guessing where to draw the link.
+class AmfCrossReference {
+  const AmfCrossReference({
+    required this.fromBookId,
+    required this.fromChapter,
+    required this.fromVerse,
+    required this.toBookId,
+    required this.toChapter,
+    required this.toVerse,
+    required this.anchor,
+    this.toVerseEnd,
+    required this.sortOrder,
+  });
+
+  final int fromBookId;
+  final int fromChapter;
+  final int fromVerse;
+  final int toBookId;
+  final int toChapter;
+  final int toVerse;
+  final int? toVerseEnd;
+
+  /// The phrase this reference follows, in the module's own text.
+  final String anchor;
+
+  /// Position among the references sharing this anchor, so the reader can render them in
+  /// the order the source listed them rather than in whatever order SQLite returns.
+  final int sortOrder;
+}
+
+/// The cross-references of one verse, grouped by the phrase they hang off.
+///
+/// The reader draws a link per phrase, not per reference: `Prov 8:22; Mark 13:19` after
+/// "beginning" is one visible marker that goes to two passages, which is how the reference
+/// presents it. Splitting them into two separate markers would put two link-coloured
+/// fragments in the middle of a sentence for no gain the reader can act on.
+class AmfAnchoredReferences {
+  const AmfAnchoredReferences({required this.anchor, required this.references});
+
+  final String anchor;
+  final List<AmfCrossReference> references;
 }
 
 /// Verifies that every chapter in a module is contiguous 1..N with no duplicates and
@@ -407,6 +599,7 @@ class AmfIntegrityChecker {
   const AmfIntegrityChecker();
 
   Future<IntegrityReport> check(AmfModuleDatabase db) async {
+    final dao = AmfBibleDao(db);
     final rows = await _query(
       db,
       'SELECT b.osisCode AS osis, v.chapter AS chapter, v.verse AS verse, '
@@ -454,6 +647,40 @@ class AmfIntegrityChecker {
         }
       }
     });
+
+    // A cross-reference pointing at a verse the module does not contain is a link that goes
+    // nowhere, and it is invisible until someone follows it — which is the worst moment to
+    // discover a build mistake. Checked here rather than trusted from the source.
+    //
+    // `chapters` is already keyed `osis:chapter`, so a target's chapter is checked against
+    // the same set the verse-contiguity check just built.
+    if (await dao.hasCrossReferences) {
+      final osisByBookId = <int, String>{
+        for (final b in await dao.books()) b.bookId: b.osisCode,
+      };
+
+      final dangling = <String>[];
+      for (final ref in await dao.allCrossReferences()) {
+        final from = osisByBookId[ref.fromBookId];
+        final to = osisByBookId[ref.toBookId];
+        if (from == null || to == null) {
+          dangling.add('references a book id the module does not declare '
+              '(${ref.fromBookId} -> ${ref.toBookId})');
+          continue;
+        }
+        if (!chapters.containsKey('$to:${ref.toChapter}')) {
+          dangling.add('$from ${ref.fromChapter}:${ref.fromVerse} points at '
+              '${ref.toChapter}:${ref.toVerse} in $to, which the module does not contain');
+        }
+      }
+      if (dangling.isNotEmpty) {
+        failures.add(IntegrityFailure(
+          'crossReferences',
+          '${dangling.length} of them point outside the module. '
+              'The first is: ${dangling.first}',
+        ));
+      }
+    }
 
     return IntegrityReport(
       chaptersChecked: chapters.length,

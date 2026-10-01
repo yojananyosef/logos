@@ -172,6 +172,52 @@ class LogosText {
     return out;
   }
 
+  /// The folded character offsets at which [term] occurs in [input], in *input*'s
+  /// coordinates.
+  ///
+  /// [fold] cannot be used for this: it expands `Æ` to `ae` and `ß` to `ss`, so offsets
+  /// measured on the folded string index a different string than the caller is about to
+  /// slice. Slicing the original at those offsets would highlight the wrong words — and
+  /// worse, the wrong words *look* plausible, so nothing would look broken.
+  ///
+  /// This folds character by character and keeps any character whose fold is longer than
+  /// one unit. `Æ` then simply does not match a query for `ae`, which is a missed match in
+  /// a language this application does not ship rather than a mis-highlighted verse.
+  static List<({int start, int end})> spansInOriginal(String input, String term) {
+    if (term.isEmpty) return const [];
+    final haystack = _foldKeepingLength(input);
+    final needle = _foldKeepingLength(term);
+    if (needle.length != term.length) {
+      // The term itself contains an expanding fold, so no window of the haystack can line
+      // up with it. Reported as no match rather than as a wrong one.
+      return const [];
+    }
+
+    final out = <({int start, int end})>[];
+    var from = 0;
+    while (true) {
+      final at = haystack.indexOf(needle, from);
+      if (at < 0) break;
+      out.add((start: at, end: at + needle.length));
+      from = at + 1;
+    }
+    return out;
+  }
+
+  /// [fold], but never changing the length of the string.
+  ///
+  /// Every Latin letter this class folds is one-to-one except `Æ`/`æ`, `Œ`/`œ`, `Þ`/`þ`
+  /// and `ß`, which expand. Those are returned unchanged so offsets stay valid.
+  static String _foldKeepingLength(String input) {
+    final out = StringBuffer();
+    for (final unit in input.toLowerCase().codeUnits) {
+      final ch = String.fromCharCode(unit);
+      final folded = _folds[ch] ?? ch;
+      out.write(folded.length == 1 ? folded : ch);
+    }
+    return out.toString();
+  }
+
   /// The number of characters strictly between two spans, or 0 if they overlap.
   ///
   /// Takes the distance between the spans rather than the text, because both spans come

@@ -8,6 +8,7 @@ import 'data/repositories/search_repository.dart';
 import 'data/services/module_installer.dart';
 import 'domain/models/passage_ref.dart';
 import 'ui/features/library/view_models/library_view_model.dart';
+import 'ui/features/reader/view_models/reader_preferences.dart';
 import 'ui/features/reader/view_models/reader_view_model.dart';
 import 'ui/features/search/view_models/search_view_model.dart';
 
@@ -105,9 +106,35 @@ final libraryViewModelProvider = ChangeNotifierProvider<LibraryViewModel>((ref) 
   return vm;
 });
 
+/// The reader's display settings, shared by every open Bible.
+///
+/// One instance for the whole application rather than one per reader: a text size is a
+/// property of the person reading, not of the translation, and a per-reader instance would
+/// reset every other Bible the moment the reader switched to it.
+///
+/// Overridable so a test can supply an in-memory store and assert that a setting survives
+/// a navigation without a platform channel.
+final readerPreferencesProvider =
+    ChangeNotifierProvider<ReaderPreferencesViewModel>((ref) {
+  return ReaderPreferencesViewModel(
+    ref.watch(readerPreferencesStoreProvider),
+  )..load();
+});
+
+/// Where settings are kept. Bootstrap supplies the real one; tests supply an
+/// [InMemoryReaderStore].
+final readerPreferencesStoreProvider = Provider<ReaderPreferencesStore>((ref) {
+  throw UnimplementedError(
+    'readerPreferencesStoreProvider must be overridden, or supplied by bootstrap.',
+  );
+});
+
 /// One reader per module id, so switching between two open Bibles does not discard the
 /// chapter each was showing.
 final readerViewModelProvider =
     ChangeNotifierProvider.family<ReaderViewModel, String>((ref, moduleId) {
-  return ReaderViewModel(ref.watch(bibleRepositoryProvider));
+  return ReaderViewModel(
+    ref.watch(bibleRepositoryProvider),
+    ref.watch(readerPreferencesProvider),
+  );
 });

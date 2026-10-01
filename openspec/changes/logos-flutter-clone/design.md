@@ -16,7 +16,10 @@ Constraints that shape the approach:
   itself under copyright until **1 January 2027**. The app must therefore build and run with a
   catalog that is absent, partial, or swapped — see D4.
 - **One codebase, six platforms.** Android, iOS, Web, Linux, macOS, Windows.
-- Flutter 3.24.5 / Dart 3.5.4.
+- Flutter 3.47.5 / Dart 3.13.4. The project was written against 3.24.5 / 3.5.4 and moved to
+  the current stable when the pinned SDK was no longer the one installed; the differences that
+  mattered were `CardTheme` → `CardThemeData` in `ThemeData`, and `withOpacity` → `withValues`
+  for alpha.
 
 ## Goals / Non-Goals
 

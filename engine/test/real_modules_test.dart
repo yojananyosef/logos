@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:logos_engine/data/repositories/bible_repository.dart';
 import 'package:logos_engine/data/services/module_installer.dart';
+import 'package:logos_engine/ui/features/reader/view_models/reader_preferences.dart';
+import 'package:logos_engine/ui/features/reader/view_models/reader_view_model.dart';
 
 /// Smoke tests against real published modules.
 ///
@@ -109,6 +111,90 @@ void main() {
             'got ${module.integrity.failures.length}');
     expect(await repo.verse('KJV', 'John', 1, 1), isNotEmpty,
         reason: 'John 1:1 must exist, or the reader cannot cite it');
+  });
+
+  test('cross-references are present and readable on a real module', () async {
+    final id = installed.firstWhere((i) => i == 'KJV', orElse: () => installed.first);
+
+    // John 1:1 carries four anchored phrases — "the beginning", "the Word", "with" and
+    // "the Word was" — and TSK gives different passages for each. A module that stored them
+    // at verse granularity would report one group here; the phrase-level shape is what the
+    // reader places them by, and it is what this asserts survives the build.
+    final references = await repo.crossReferences(id, 'John', 1);
+
+    expect(references, isNotEmpty, reason: '$id carries no cross-references in John 1');
+    expect(references[1]!.length, greaterThan(1),
+        reason: 'TSK anchors John 1:1 on several phrases; one would mean the phrase-level '
+            'shape was flattened in the build');
+    expect(references[1]!.map((g) => g.anchor),
+        containsAll(['the beginning', 'the Word']));
+  });
+
+  test('every cross-reference on a real module points somewhere the module contains',
+      () async {
+    final id = installed.firstWhere((i) => i == 'KJV', orElse: () => installed.first);
+    final module = await repo.open(id);
+
+    // The integrity check reports dangling targets. Asserting on it directly here is what
+    // turns "the links exist" into "the links work": 336,829 of them is not a thing to spot
+    // check by eye, and one that points at a verse the module lacks is invisible until
+    // somebody follows it.
+    final xrefFailures = module.integrity.failures
+        .where((f) => f.chapterKey == 'crossReferences')
+        .toList();
+
+    expect(xrefFailures, isEmpty,
+        reason: 'dangling cross-references: ${xrefFailures.map((f) => f.reason).join('; ')}');
+  });
+
+  test('a find reports every occurrence of a term across a real module', () async {
+    final id = installed.firstWhere((i) => i == 'KJV', orElse: () => installed.first);
+    final vm = ReaderViewModel(repo, ReaderPreferencesViewModel(InMemoryReaderStore()));
+
+    await vm.open(id, osisCode: 'John', chapter: 1);
+    await vm.find('Word');
+
+    // "Word" capitalised appears in John 1:1 and 1:14. The point is not the exact count —
+    // it is that the count is the module's and the matches are ordered by the canon.
+    expect(vm.state.find.matchCount, greaterThanOrEqualTo(2),
+        reason: 'John 1:1 and 1:14 both have "Word" capitalised');
+    expect(vm.state.find.activeMatch!.chapter, 1,
+        reason: 'the reader opened in John 1, so the search starts where they are rather '
+            'than at the first "Word" in the canon, which is in Genesis');
+    expect(vm.state.osisCode, 'John');
+
+    final orders = vm.state.find.result!.matches.map((m) => m.bookOrder).toList();
+    expect(orders, equals([...orders]..sort()),
+        reason: 'matches are in reading order, or stepping jumps about unpredictably');
+  });
+
+  test('a cross-reference followed on a real module lands on real text', () async {
+    final id = installed.firstWhere((i) => i == 'KJV', orElse: () => installed.first);
+    final vm = ReaderViewModel(repo, ReaderPreferencesViewModel(InMemoryReaderStore()));
+
+    await vm.open(id, osisCode: 'John', chapter: 1);
+    final references = await repo.crossReferences(id, 'John', 1);
+    expect(references, isNotEmpty);
+
+    // Follow the first reference of the first phrase, through the same path the view takes.
+    final group = references.values.first.first;
+    final books = (await repo.open(id)).books;
+    final target = books.firstWhere((b) => b.bookId == group.references.first.toBookId);
+
+    await vm.followCrossReference(
+      group.references.first,
+      toBook: target.osisCode,
+    );
+
+    expect(vm.state.status, ReaderStatus.ready);
+    expect(vm.state.osisCode, target.osisCode);
+    expect(vm.state.chapter, isNotNull);
+    expect(vm.state.chapter!.verses, isNotEmpty,
+        reason: 'the reference must lead to text, not to an empty chapter');
+    expect(vm.state.canGoBack, isTrue);
+
+    await vm.goBack();
+    expect(vm.state.osisCode, 'John', reason: 'and the reader can come back');
   });
 
   test('the upstream merged-verse defect is still present in WEB', () async {

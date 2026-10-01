@@ -81,4 +81,4 @@ Ninguna — el proyecto no tenía especificaciones previas.
 - **Riesgo conocido**: el texto de las Biblias y de las obras de los autores está bajo derechos de
   autor. El clon usa exclusivamente obras de dominio público y no replica contenido
   protegido de Faithlife; la estructura queda lista para conectar una fuente propia.
-- **Toolchain**: Flutter 3.24.5 / Dart 3.5.4 (SDK instalado en `/tmp/opencode/flutter`).
+- **Toolchain**: Flutter 3.47.5 / Dart 3.13.4 (SDK instalado en `~/development/flutter`).

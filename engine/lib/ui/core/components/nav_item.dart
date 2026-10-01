@@ -89,7 +89,7 @@ class _NavItemState extends State<NavItem> {
           cursor: SystemMouseCursors.click,
           child: InkWell(
             onTap: widget.onTap,
-            focusColor: LogosColors.linkHover.withOpacity(0.16),
+            focusColor: LogosColors.linkHover.withValues(alpha: 0.16),
             hoverColor: Colors.transparent,
             child: row,
           ),

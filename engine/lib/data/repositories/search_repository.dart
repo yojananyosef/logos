@@ -180,6 +180,7 @@ class SearchRepository {
         rows.add(AmfSearchHit(
           osisCode: ref.bookOsis,
           bookName: book.name,
+          bookOrder: book.bookOrder,
           chapter: v.chapter,
           verse: v.verse,
           verseEnd: v.verseEnd,
@@ -190,12 +191,12 @@ class SearchRepository {
     }
 
     final verses = await opened.dao.singleVerse(ref.bookOsis, ref.chapter, ref.verse);
+    final book = opened.books.where((b) => b.osisCode == ref.bookOsis).firstOrNull;
     for (final v in verses) {
       rows.add(AmfSearchHit(
         osisCode: ref.bookOsis,
-        bookName:
-            opened.books.where((b) => b.osisCode == ref.bookOsis).firstOrNull?.name ??
-                ref.bookOsis,
+        bookName: book?.name ?? ref.bookOsis,
+        bookOrder: book?.bookOrder ?? 0,
         chapter: v.chapter,
         verse: v.verse,
         verseEnd: v.verseEnd,
@@ -220,6 +221,7 @@ class SearchRepository {
           rows.add(AmfSearchHit(
             osisCode: book.osisCode,
             bookName: book.name,
+            bookOrder: book.bookOrder,
             chapter: v.chapter,
             verse: v.verse,
             verseEnd: v.verseEnd,

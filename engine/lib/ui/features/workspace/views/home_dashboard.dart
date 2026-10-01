@@ -268,7 +268,7 @@ class _Card extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: LogosSpacing.sm, vertical: 2),
                       decoration: BoxDecoration(
-                        color: LogosColors.surface.withOpacity(0.16),
+                        color: LogosColors.surface.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(

@@ -156,6 +156,17 @@ class BibleRepository {
   Future<List<AmfVerse>> chapter(String id, String osisCode, int chapter) async =>
       (await open(id)).dao.chapter(osisCode, chapter);
 
+  /// The cross-references anchored in one chapter, keyed by verse.
+  ///
+  /// Empty for a module with no `crossReferences` table, which is a module built before the
+  /// table existed rather than a failure.
+  Future<Map<int, List<AmfAnchoredReferences>>> crossReferences(
+    String id,
+    String osisCode,
+    int chapter,
+  ) async =>
+      (await open(id)).dao.chapterCrossReferences(osisCode, chapter);
+
   Future<List<AmfVerse>> verse(
           String id, String osisCode, int chapter, int verse) async =>
       (await open(id)).dao.singleVerse(osisCode, chapter, verse);

@@ -128,4 +128,6 @@ overflowed vertically at 1440×900, and the promo banner overflowed horizontally
 
 ## Toolchain
 
-Flutter 3.24.5 · Dart 3.5.4. `drift` is pinned to 2.23.x because 2.31 requires Dart 3.7.
+Flutter 3.47.5 · Dart 3.13.4. `drift` resolves to 2.31.x, the floor in `pubspec.yaml`
+being 2.23.0 — the reader uses the `GeneratedDatabase` escape hatch described in
+`lib/data/services/amf_reader.dart`, and the floor is where that API was last checked.

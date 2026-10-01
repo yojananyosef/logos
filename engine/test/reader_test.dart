@@ -8,6 +8,7 @@ import 'package:logos_engine/data/services/module_installer.dart';
 import 'package:logos_engine/ui/core/theme/logos_colors.dart';
 import 'package:logos_engine/ui/core/theme/logos_theme.dart';
 import 'package:logos_engine/ui/features/reader/views/bible_reader_view.dart';
+import 'package:logos_engine/ui/features/reader/view_models/reader_preferences.dart';
 import 'package:logos_engine/ui/features/reader/view_models/reader_view_model.dart';
 
 import 'support/module_builder.dart';
@@ -29,6 +30,13 @@ void main() {
     return BibleRepository(ModuleStore(temp));
   }
 
+  /// Fresh reader settings for a test.
+  ///
+  /// In-memory rather than shared: each test states its own formatting, so one test changing
+  /// the text size cannot make another test's assertions depend on execution order.
+  ReaderPreferencesViewModel newPreferences() =>
+      ReaderPreferencesViewModel(InMemoryReaderStore());
+
   /// Builds a module, opens it and loads a chapter.
   ///
   /// Wrapped in [WidgetTester.runAsync] for the widget tests: those run under a fake
@@ -43,7 +51,7 @@ void main() {
     late ReaderViewModel vm;
     await tester.runAsync(() async {
       final repo = await install(builder);
-      vm = ReaderViewModel(repo);
+      vm = ReaderViewModel(repo, newPreferences());
       await vm.open(builder.id, osisCode: osisCode, chapter: chapter);
     });
     return vm;
@@ -79,7 +87,7 @@ void main() {
   /// notification and hide whether a test actually observed a change.
   Widget harness(ReaderViewModel vm) {
     return MaterialApp(
-      theme: buildLogosTheme(),
+      theme: buildLogosTheme(splashFactory: InkRipple.splashFactory),
       home: Scaffold(body: BibleReaderView(viewModel: vm)),
     );
   }
@@ -87,7 +95,7 @@ void main() {
   group('reading a chapter', () {
     test('shows the verses in order', () async {
       final repo = await install(complete());
-      final vm = ReaderViewModel(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('GOOD', osisCode: 'John', chapter: 1);
 
       expect(vm.state.status, ReaderStatus.ready);
@@ -106,7 +114,7 @@ void main() {
 
     test('navigates chapters within a book', () async {
       final repo = await install(complete());
-      final vm = ReaderViewModel(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('GOOD', osisCode: 'Gen', chapter: 1);
 
       await vm.next();
@@ -123,7 +131,7 @@ void main() {
       // that silently wrapped or invented a chapter 2 would be showing content the
       // module does not contain.
       final repo = await install(complete());
-      final vm = ReaderViewModel(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('GOOD', osisCode: 'John', chapter: 1);
 
       await vm.next();
@@ -133,7 +141,7 @@ void main() {
 
     test('refuses to go past the first chapter', () async {
       final repo = await install(complete());
-      final vm = ReaderViewModel(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('GOOD', osisCode: 'John', chapter: 1);
 
       await vm.previous();
@@ -142,32 +150,46 @@ void main() {
     });
 
     test('moves forward and back between books', () async {
-      // John is book 1 and Genesis book 2 in the fixture, so the boundaries can be
-      // checked from both ends.
+      // The fixture holds Genesis and John, and the module reports them in the order of the
+      // canon rather than the order the fixture added them — which is what the reader's
+      // book list shows and what every ordered result in the application sorts by.
       final repo = await install(complete());
-      final vm = ReaderViewModel(repo);
-      await vm.open('GOOD', osisCode: 'John', chapter: 1);
+      final vm = ReaderViewModel(repo, newPreferences());
+      await vm.open('GOOD', osisCode: 'Gen', chapter: 1);
 
       await vm.nextBook();
-      expect(vm.state.osisCode, 'Gen');
+      expect(vm.state.osisCode, 'John');
       expect(vm.state.chapterNumber, 1,
           reason: 'a new book starts at chapter 1, not where the last one left off');
 
       await vm.nextBook();
-      expect(vm.state.osisCode, 'Gen', reason: 'there is no book after the last one');
+      expect(vm.state.osisCode, 'John', reason: 'there is no book after the last one');
 
       await vm.previousBook();
-      expect(vm.state.osisCode, 'John');
+      expect(vm.state.osisCode, 'Gen');
 
       await vm.previousBook();
-      expect(vm.state.osisCode, 'John', reason: 'there is no book before the first one');
+      expect(vm.state.osisCode, 'Gen', reason: 'there is no book before the first one');
+    });
+
+    test('the book list is in the order of the canon', () async {
+      final repo = await install(complete());
+      final vm = ReaderViewModel(repo, newPreferences());
+      await vm.open('GOOD', osisCode: 'Gen');
+
+      expect(
+        vm.state.books.map((b) => b.osisCode),
+        ['Gen', 'John'],
+        reason: 'Genesis is book 1 and John is book 43; a book list in any other order is '
+            'not one a reader can navigate',
+      );
     });
   });
 
   group('an incomplete module is reported, not hidden', () {
     test('the chapter records that it does not start at verse 1', () async {
       final repo = await install(defective());
-      final vm = ReaderViewModel(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('BAD', osisCode: 'John', chapter: 1);
 
       expect(vm.state.chapter!.startsAtVerse, 2);
@@ -199,7 +221,7 @@ void main() {
 
     test('the module integrity report is carried through', () async {
       final repo = await install(defective());
-      final vm = ReaderViewModel(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('BAD');
 
       expect(vm.state.integrity, isNotNull);
@@ -210,7 +232,7 @@ void main() {
 
   group('failure states', () {
     test('an absent module reports an error rather than hanging', () async {
-      final vm = ReaderViewModel(BibleRepository(ModuleStore(temp)));
+      final vm = ReaderViewModel(BibleRepository(ModuleStore(temp)), newPreferences());
       await vm.open('MISSING');
 
       expect(vm.state.status, ReaderStatus.failed);

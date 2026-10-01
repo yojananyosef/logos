@@ -316,8 +316,12 @@ void main() {
     });
 
     test('highlighting works across diacritics', () async {
-      final b = ModuleBuilder('DIA', name: 'Diacritics');
-      b.addVerse('Juan', 1, 1, 'En el principio estaba la Palabra.');
+      // Keyed on `John` and named `Juan`: a Spanish module keeps the OSIS code as its
+      // identity and the translation's own word as its display name, which is what
+      // `tool/build_module.dart` writes from `\toc2`.
+      final b = ModuleBuilder('DIA',
+          name: 'Diacritics', bookNames: {'John': 'Juan'});
+      b.addVerse('John', 1, 1, 'En el principio estaba la Palabra.');
       final repo = await repositoryFor([b]);
       final run = await search(repo, 'palabra');
       final matched = [

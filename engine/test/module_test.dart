@@ -184,9 +184,14 @@ void main() {
     test('search matches across diacritics', () async {
       // The reason the format chose `remove_diacritics 2`: a Spanish module has to be
       // searchable by the unaccented form, because that is what most people type.
-      final b = ModuleBuilder('ES');
+      //
+      // Keyed on `John` and named `Juan`, because that is how a Spanish module is built: the
+      // OSIS code is what the application addresses the book by, and the display name is the
+      // translation's own. A module keyed on `Juan` would be a book the reference parser
+      // cannot resolve `Jn 3:16` against.
+      final b = ModuleBuilder('ES', bookNames: {'John': 'Juan'});
       b.addVerse(
-          'Juan', 1, 1, 'En el principio era el Verbo, y el Verbo estaba con Dios.');
+          'John', 1, 1, 'En el principio era el Verbo, y el Verbo estaba con Dios.');
       await b.writeTo(temp);
       final repo = BibleRepository(ModuleStore(temp));
 

@@ -88,5 +88,6 @@ openspec            both changes valid in strict mode
 
 ## Toolchain
 
-Flutter 3.24.5 · Dart 3.5.4. `drift` is pinned to 2.23.x because 2.31 requires Dart 3.7.
+Flutter 3.47.5 · Dart 3.13.4. `drift` resolves to 2.31.x; the `^2.23.0` floor in
+`pubspec.yaml` is kept for the reader's API surface, not because 2.31 is out of reach.
 The web build compiles clean and bundles the typeface.
