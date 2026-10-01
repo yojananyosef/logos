@@ -41,9 +41,19 @@ The workspace shell, reproduced 1:1 from the reference: a 48dp icon rail with th
 section, the resource tab strip, the six-section toolbar and sub-toolbar, split panes, and
 the dashboard with its four observed card types.
 
-A reader that opens a real KJV: 66 books, 31,102 verses, phrase-level cross-references to
-336,829 TSK passages, three verse-number styles, four colour schemes, find, and a layout that
-reflows by layout class.
+A reader that opens a real Spanish Bible: the **Reina-Valera 1909**, 66 books, 31,084
+verses, phrase-level cross-references to 336,700 TSK passages, three verse-number styles,
+four colour schemes, find, and a layout that reflows by layout class. The English KJV
+(31,102 verses, 336,829 cross-references) is built from the same pipeline and passes the
+same tests.
+
+Spanish is the application's first language, so the corpus was chosen on that footing
+rather than as an addition. The Reina-Valera lineage is the one Spanish scholarship
+actually cites, and the 1909 revision is public domain with a CC0 USFM transcription. The
+candidates that are in wider use today were evaluated and refused on licence, each with
+the reason recorded in `catalog.json` — Reina-Valera Gómez is CC BY-**NC**-**ND**, which
+forbids both the commercial use and the derivative that a compiled module is. The list is
+in the catalogs repository's README.
 
 And a library that can put one there. The `Suyos` / `Tienda` scopes, the `por Título` sort,
 search-as-you-type over titles and subtitles, grid and list with the choice persisted, and a
@@ -53,6 +63,30 @@ refusing install path — see **Three defects the install path was hiding** belo
 logical pixels it keeps a 207px sidebar and the document overflows horizontally. This clone is
 identical on desktop and genuinely adaptive below that, in four layout classes resolved from
 available space.
+
+## Two more defects, found by building the Spanish text
+
+The three below were on the path from the user to an installed Bible. Two more surfaced
+when the same path was walked in Spanish, and they are of the same species: a claim that
+looked true because nothing ever tested it.
+
+**No Spanish module could be built at all.** `tool/build_module.dart` identified a book by
+the human-readable name in its USFM headers, and that table held English names. Reina-Valera
+calls John *Juan* and Matthew *San Mateo*, and 1, 2 and 3 John are all *San Juan* — so not
+one of the sixty-six books matched. The build exited with `no .usfm files matched`, and
+because unmatched files were dropped without comment, the error read as a statement about
+the archive rather than about the names. The mapping now keys on the three-letter USFM code
+in `\id`, which is `JHN` in every language because the format defines it, and an
+unresolvable file is named in the error instead of vanishing.
+
+**The catalog's own digest could not be reproduced.** The README documented a command and
+stated that the recorded KJV digest came from it. Running it produced a 4.3 MB module with
+no cross-references and a different digest. Supplying the cross-references and full metadata
+reproduced the byte size exactly and *still* not the digest, because the manifest's metadata
+strings differed. The scripture was never in doubt — `content.db` hashed identically in both
+builds — but a digest nobody can re-derive is a number that appeared from somewhere, which
+is the whole thing the integrity story is for. Built modules now record their build inputs
+in `catalog.json`, and the recorded digests are the ones those inputs produce.
 
 ## Three defects the install path was hiding
 

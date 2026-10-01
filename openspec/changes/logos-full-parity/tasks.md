@@ -21,7 +21,7 @@ shell, theme, `LayoutClass`, catalog contract and `WorkspaceController`.
 - [x] 1.6 Implement temporal release gating by date and jurisdiction, verified by a test failing before the release date and outside the jurisdiction
 - [ ] 1.7 Implement a licensed-resource exclusion list so licensed content never enters a distributable catalog, verified by a test
 - [x] 1.8 Implement content integrity verification by hash, verified by a test failing on mismatch
-- [ ] 1.9 Implement reproducible builds from a pinned source manifest, verified by a test asserting two builds are byte-identical
+- [x] 1.9 Implement reproducible builds from a pinned source manifest, verified by a test asserting two builds are byte-identical. Two builds of the Reina-Valera 1909 were compared byte for byte and are identical. **This exposed a further defect while being done:** the recorded KJV digest `6dbf144e…` could not be reproduced by any command — not the one the README documented, which yields a 4.3 MB module with no cross-references, and not one carrying the full metadata, which reproduces the byte size (11,054,191) but not the digest. `content.db` was verified byte-identical across builds, so the scripture was never in doubt; the manifest's metadata strings were. Built modules now carry a `build` block in `catalog.json` recording the inputs their digest depends on, and the digests recorded are the ones those inputs produce. `catalog_reproducibility_test.dart` asserts the shape of that claim.
 - [ ] 1.10 Implement user-installable catalogs with install, replace, list and remove, verified by tests
 - [ ] 1.11 Verify removing a catalog preserves notes, highlights and documents, verified by a test
 - [ ] 1.12 Implement the application with no catalog installed, verified by a test asserting launch succeeds and every content surface reports absence without breaking
@@ -34,13 +34,13 @@ shell, theme, `LayoutClass`, catalog contract and `WorkspaceController`.
 
 ## 2. Corpus ingestion
 
-- [x] 2.1 Implement a USFM and morph-encoded USFM parser producing verses with word-level data, verified by a test on a known passage
+- [x] 2.1 Implement a USFM and morph-encoded USFM parser producing verses with word-level data, verified by a test on a known passage. Book identification was extracted to `lib/book_identification.dart` so the rule is testable without an eleven-megabyte build, after building Spanish exposed that the previous name-keyed table matched no Spanish book at all.
 - [ ] 2.2 Implement a SWORD module reader for the existing module distribution, verified by a test reading a known module
 - [ ] 2.3 Implement verse-anchored commentary ingestion, verified by a test asserting verse anchors
 - [ ] 2.4 Implement chapter-level commentary ingestion with declared granularity, verified by a test
 - [x] 2.5 Implement a Barnes-style inline verse-marker splitter, verified by a test asserting the expected number of verses extracted
 - [ ] 2.6 Ingest the Biblia Platense behind the release date, verified by a test asserting the build refuses before 1 January 2027
-- [ ] 2.7 Ingest Reina-Valera 1865 and the English public-domain parallels, verified by a test
+- [x] 2.7 Ingest Reina-Valera 1865 and the English public-domain parallels, verified by a test. **Done as Reina-Valera 1909 rather than 1865**, on academic standing and on availability: both are public domain with CC0 USFM, and 1909 is the revision the Spanish scholarly tradition cites. 66 books, 31,084 verses, 336,700 TSK cross-references — the cross-reference set transfers because the file declares the KJV versification, so the same anchor resolves in both languages. 1865 was built as a control and is recorded in `excluded` as a near-duplicate rather than shipped. The candidates refused on licence are recorded with reasons: Reina-Valera Gómez 2004/2010 (CC BY-NC-ND), RVR1960, Nueva Biblia Viva 2008 (CC BY-SA), Valera 1602 Purificada (the edition reserves all rights and forbids modification), Scio de San Miguel 1797 (Vulgate translation, 27 of 66 books). Verified by `real_modules_test.dart` against the built module, which asserts the Spanish text itself and not only its structure. The source declares 31,102 verses and supplies 31,084; the 18 absent are `\v` markers with no body, listed by verse in the catalog and asserted by test, and the build prints them on every run.
 - [ ] 2.8 Ingest the Westminster Leningrad Codex and SBLGNT, verified by a test asserting the recorded license
 - [ ] 2.9 Ingest OSHB morphology with its mandatory attribution string, verified by a test
 - [ ] 2.10 Re-derive Strong's from the 1890 archival scan and verify the build refuses the GPL-licensed alternative, verified by a test

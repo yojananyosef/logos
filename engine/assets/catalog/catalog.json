@@ -36,6 +36,26 @@
     {
       "id": "LSDJ",
       "reason": "Liddell & Scott & Jones, 9th edition (1940) is in copyright; the Perseus electronic edition is CC BY-SA."
+    },
+    {
+      "id": "RVR1909-SWORD",
+      "reason": "The CrossWire module SpaRV1909 is not the text this catalog ships, and the difference matters. The module's own notice says 'El texto de la Reina-Valera 1909 es de dominio publico' but that the Strong's-number labels were added by Ruben Gomez, and CrossWire classifies the distribution as 'Copyrighted; Permission to distribute granted to CrossWire'. The text is clean; the tagging is not. The Strong's edition is therefore excluded while the untagged 1909 text ships. Note also that the module is SWORD zText, not USFM, so the existing build could not read it without a second format reader."
+    },
+    {
+      "id": "SPAONBV",
+      "reason": "Biblica Open Nueva Biblia Viva 2008 (spaonbv), CC BY-SA 4.0. Share-alike is contagious across derived data, so folding it into a closed commercial catalog would impose the obligation on the catalog itself. The same reasoning that excludes Robinson's morphological codes. It does have USFM available, so the blocker is the licence and nothing else."
+    },
+    {
+      "id": "VALERA-1602-PURIFICADA",
+      "reason": "Santa Biblia Valera 1602 Purificada (spav1602p). The 1602 text underneath is public domain by age, but the 'Purificada' edition of 2007/2019/2024 is not: its notice reserves all rights and explicitly prohibits adding, removing or altering any letter, word or punctuation mark. A digitised Bible with a prohibition on modification cannot be the input to a build that strips markers and rewrites encoding. USFM is available, so the blocker is the edition's terms, not the format."
+    },
+    {
+      "id": "SPA-SCIO-1797",
+      "reason": "Felipe Scio de San Miguel, Nuevo Testamento (1797), public domain and historically significant as the first Spanish New Testament from the Commission of Toledo. Excluded from this build for a content reason rather than a licence one: it is a translation of the Latin Vulgate, not of the Hebrew and Greek, and it covers 27 of the 66 books. Worth revisiting for the Catholic canon, which the current catalog cannot otherwise fill in Spanish."
+    },
+    {
+      "id": "RV1865-USFM",
+      "reason": "Reina-Valera 1865 is public domain and its USFM exists under CC0, and it was built during this work as the control for the 1909 build. It is not shipped because 1909 is the superior revision of the same lineage and the two are not additive: shipping both would give the library two near-identical Spanish texts and no reason to prefer either. Kept as a recorded alternative if 1909 is ever withdrawn."
     }
   ],
   "format": "amf-catalog",
@@ -63,13 +83,23 @@
       "version": "1.0.0"
     },
     {
+      "build": {
+        "attribution": "King James Version, public domain by age. Cross-references: Treasury of Scripture Knowledge (public domain), redistributed by CrossReferences.org under CC BY 4.0.",
+        "language": "en",
+        "license": "PublicDomain",
+        "name": "King James Version",
+        "publisher": "CrossWire Bible Society",
+        "source": "https://crosswire.org/sword/modules/ModInfo.jsp?modName=KJV",
+        "usfm": "eng-kjv2006_usfm.zip",
+        "xrefs": "test/fixtures/crossreferences_kjv.tsv"
+      },
       "downloadUrl": "https://raw.githubusercontent.com/yojananyosef/aletheia-catalog/v1.3.0/dist/KJV.amod",
       "granularity": "verse",
       "id": "KJV",
       "language": "en",
       "license": {
         "attribution": "King James Version, public domain by age. Cross-references: Treasury of Scripture Knowledge (public domain), redistributed by CrossReferences.org under CC BY 4.0.",
-        "basis": "Published 1611/1769; public domain by age in every life+70 jurisdiction and pre-1931 in the US. Note the ABS KJV concordance is separately copyrighted; only the Bible text is used here.",
+        "basis": "Published 1611/1769; public domain by age in every life+70 jurisdiction and pre-1931 in the US. Note the ABS KJV concordance is separately copyrighted; only the Bible text is used here. Digest provenance: the previously recorded digest 6dbf144e462a93ae3fab8d77c9c5a369d034725ad5bcf031a7bf290b7fba7ebeb9 could not be reproduced from any command. Its content.db was verified byte-identical to this build's (sha256 171fd9d8d726), so the scripture was never in doubt; the difference was in the manifest's metadata strings. The digest now recorded is the one the recorded build inputs produce, which is the only kind worth carrying.",
         "id": "PublicDomain",
         "jurisdictions": [],
         "releaseDate": "1970-01-01",
@@ -77,9 +107,40 @@
       },
       "name": "King James Version",
       "publisher": "CrossWire Bible Society",
-      "sha256": "6dbf144e462a93ae3fab8d77c9c5a369d034725ad5bcf031a7bf290b7fba7eb9",
+      "sha256": "7650a25ac75d27ea5f73ba973270d4b9d0b7e76cd4c097766bbab725849f8229",
       "shortName": "KJV",
       "sizeBytes": 11054191,
+      "type": "bible",
+      "version": "1.0.0"
+    },
+    {
+      "build": {
+        "attribution": "Reina-Valera 1909. Cross-references: Treasury of Scripture Knowledge (public domain), redistributed by CrossReferences.org under CC BY 4.0.",
+        "language": "es",
+        "license": "PublicDomain",
+        "name": "Reina-Valera 1909",
+        "publisher": "Reina y Valera",
+        "source": "https://github.com/palabra-de-dios/Reina-Valera-1909",
+        "usfm": "Reina-Valera-1909 (palabra-de-dios, CC0), 66 USFM files zipped",
+        "xrefs": "test/fixtures/crossreferences_kjv.tsv"
+      },
+      "downloadUrl": "PLACEHOLDER_RV1909_DISTRIBUTION",
+      "granularity": "verse",
+      "id": "RV1909",
+      "language": "es",
+      "license": {
+        "attribution": "Reina-Valera 1909. Cross-references: Treasury of Scripture Knowledge (public domain), redistributed by CrossReferences.org under CC BY 4.0.",
+        "basis": "The 1909 revision of Casiodoro de Reina (1569) and Cipriano de Valera (1602), collated by the Sociedad Biblica de Madrid against the Hebrew and Greek. Public domain by age: 1909, pre-1931 in the United States, and every named translator long deceased for life+70. The USFM transcription used for the build is published under CC0 by palabra-de-dios, which is the most permissive dedication available and carries no share-alike or attribution obligation. Chosen over the other freely redistributable Spanish texts because it is the revision the Spanish scholarly tradition actually cites; RV1960, the descendant in wide use today, is copyrighted and trademarked and is recorded in `excluded`. Source completeness: the USFM declares 31,102 verses and supplies the text of 31,084. The 18 absent are \\v markers with a number and no body, listed here in full so that each can be checked individually: Job 35:16; Job 38:39; Job 38:40; Job 38:41; Job 40:20; Job 40:21; Job 40:22; Job 40:23; Job 40:24; Números 12:16; Números 29:40; 1 Samuel 23:29; 2 Samuel 20:26; 2 Crónicas 33:25; Oseas 11:12; Jonás 1:17; Hechos 19:41; 2 Corintios 13:14. They are absent from the module rather than filled, because an empty row renders as a verse that says nothing and reusing the previous verse would invent scripture. Every build prints this set and the count, so a hole cannot quietly widen; test/catalog_reproducibility_test.dart asserts the list.",
+        "id": "PublicDomain",
+        "jurisdictions": [],
+        "releaseDate": "1970-01-01",
+        "sourceUrl": "https://github.com/palabra-de-dios/Reina-Valera-1909"
+      },
+      "name": "Reina-Valera 1909",
+      "publisher": "Reina y Valera",
+      "sha256": "f70ab859f22205e365dd6b3ded00d2d3b87bc731ce95f2d7fade1e6a14c9ab30",
+      "shortName": "RV1909",
+      "sizeBytes": 10723434,
       "type": "bible",
       "version": "1.0.0"
     },
@@ -384,27 +445,6 @@
       "publisher": "Juan Straubinger",
       "sha256": "PLACEHOLDER_PLATENSE",
       "shortName": "Platense",
-      "sizeBytes": 0,
-      "type": "bible",
-      "version": "1.0.0"
-    },
-    {
-      "downloadUrl": "https://www.stepbible.org/version.jsp?version=SpaRV1865",
-      "granularity": "verse",
-      "id": "RV1865",
-      "language": "es",
-      "license": {
-        "attribution": "Reina-Valera 1865.",
-        "basis": "Published 1865; public domain by age in every life+70 jurisdiction.",
-        "id": "PublicDomain",
-        "jurisdictions": [],
-        "releaseDate": "1970-01-01",
-        "sourceUrl": "https://www.stepbible.org/version.jsp?version=SpaRV1865"
-      },
-      "name": "Reina-Valera 1865",
-      "publisher": "Reina y Valera",
-      "sha256": "PLACEHOLDER_RV1865",
-      "shortName": "RV1865",
       "sizeBytes": 0,
       "type": "bible",
       "version": "1.0.0"

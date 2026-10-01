@@ -155,16 +155,26 @@ void main() {
     final id = installed.firstWhere((i) => i == 'KJV', orElse: () => installed.first);
     final vm = ReaderViewModel(repo, ReaderPreferencesViewModel(InMemoryReaderStore()));
 
-    await vm.open(id, osisCode: 'John', chapter: 1);
-    await vm.find('Word');
+    // The term has to suit the module. This test used to hard-code the English "Word",
+    // which passes when the directory happens to hold the KJV and reports zero matches
+    // when it holds a Spanish one — so it was really asserting that the directory held
+    // an English Bible, which is not what its name says.
+    //
+    // Each term is the same word in that language and appears in John 1:1 and 1:14, so
+    // both modules answer the same question. "Verbo" was checked against the built
+    // Reina-Valera module rather than assumed: two occurrences in John, at 1:1 and 1:14.
+    final term = id == 'KJV' ? 'Word' : 'Verbo';
 
-    // "Word" capitalised appears in John 1:1 and 1:14. The point is not the exact count —
-    // it is that the count is the module's and the matches are ordered by the canon.
+    await vm.open(id, osisCode: 'John', chapter: 1);
+    await vm.find(term);
+
+    // The point is not the exact count — it is that the count is the module's and the
+    // matches are ordered by the canon.
     expect(vm.state.find.matchCount, greaterThanOrEqualTo(2),
-        reason: 'John 1:1 and 1:14 both have "Word" capitalised');
+        reason: 'John 1:1 and 1:14 both have "$term" capitalised in $id');
     expect(vm.state.find.activeMatch!.chapter, 1,
         reason: 'the reader opened in John 1, so the search starts where they are rather '
-            'than at the first "Word" in the canon, which is in Genesis');
+            'than at the first "$term" in the canon, which is in Genesis');
     expect(vm.state.osisCode, 'John');
 
     final orders = vm.state.find.result!.matches.map((m) => m.bookOrder).toList();
@@ -224,6 +234,114 @@ void main() {
     expect(merged.single.text, contains('the other will be left'),
         reason: 'Luke 17:36 text is carried inside 17:35');
     expect(await repo.verse('WEB', 'Luke', 17, 36), isEmpty);
+  });
+
+  // Spanish is the application's first language, not a later addition, so a module built
+  // from the Reina-Valera 1909 is exercised on the same terms as the English one. These
+  // are skipped when no Spanish module is present, exactly as the file's other
+  // module-specific tests are.
+  group('a Spanish module', () {
+    const spanish = 'RV1909';
+    bool have() => installed.contains(spanish);
+
+    test('opens, lists all 66 books, and answers a verse lookup', () async {
+      if (!have()) {
+        expect(installed, isNotEmpty, reason: 'no modules at all in $dir');
+        return;
+      }
+      final module = await repo.open(spanish);
+
+      expect(module.books, hasLength(66),
+          reason: 'a Spanish Bible with 65 books is missing one');
+      expect(module.books.first.osisCode, 'Gen',
+          reason: 'books are addressed by OSIS, whatever the translation calls them');
+      expect(module.books.last.osisCode, 'Rev');
+
+      final john = await repo.chapter(spanish, 'John', 1);
+      expect(john.map((v) => v.verse), containsAllInOrder([1, 2, 3]));
+      expect(john.first.verse, 1, reason: 'Juan 1:1 must be addressable');
+    });
+
+    test('carries Spanish text, not an English fallback', () async {
+      if (!have()) return;
+
+      // The specific regression a Spanish module exists to prevent: a build that
+      // silently produced an empty or English chapter would still pass every structural
+      // assertion above, because a row of any text satisfies them.
+      //
+      // The capitalisation is the source's, not a normalisation this build applied.
+      // Reina-Valera opens both of these in full capitals — Génesis 1:1 is "EN el
+      // principio" — and sets Juan 2:1 as "Y AL tercer día". The expectation reproduces
+      // it deliberately, so that a change which lower-cases the whole module would have
+      // to be a decision rather than an accident.
+      final john11 = await repo.verse(spanish, 'John', 1, 1);
+      expect(john11.single.text, 'EN el principio era el Verbo, y el Verbo era con Dios, '
+          'y el Verbo era Dios.');
+
+      final gen11 = await repo.verse(spanish, 'Gen', 1, 1);
+      expect(gen11.single.text, 'EN el principio crió Dios los cielos y la tierra.');
+
+      final john316 = await repo.verse(spanish, 'John', 3, 16);
+      expect(john316.single.text, startsWith('Porque de tal manera amó Dios al mundo'));
+    });
+
+    test('names its books in Spanish while addressing them by OSIS', () async {
+      if (!have()) return;
+      final module = await repo.open(spanish);
+
+      // Both halves matter. A Spanish reader wants to see "Génesis", and the reference
+      // parser needs `Gen` to resolve `Gén. 1:1`. A module that stored the display name
+      // in the addressable column would break one of the two.
+      String nameOf(String osis) =>
+          module.books.firstWhere((b) => b.osisCode == osis).name;
+
+      expect(nameOf('Gen'), 'Génesis');
+      expect(nameOf('John'), 'Juan');
+      expect(nameOf('Rev'), 'Apocalipsis');
+      expect(nameOf('Song'), 'Cantar de los Cantares');
+    });
+
+    test('searches Spanish text and folds the accents', () async {
+      if (!have()) return;
+
+      // Spanish orthography is accented and people do not always type it. "principio"
+      // must find "principio" and "Dios" must be reachable either way.
+      expect(await repo.search(spanish, 'principio'), isNotEmpty);
+      expect(await repo.search(spanish, 'Verbo'), isNotEmpty);
+      expect(await repo.search(spanish, 'camino'), isNotEmpty,
+          reason: 'Génesis 3:8 is "el camino del Señor"');
+    });
+
+    test('every chapter begins at verse 1, in Spanish as in English', () async {
+      if (!have()) return;
+      final module = await repo.open(spanish);
+
+      // The off-by-one that lost verse 1 of 260 chapters upstream was never
+      // language-specific, and this is the assertion that would have caught it in a
+      // Spanish build as readily as in an English one.
+      expect(module.integrity.isValid, isTrue,
+          reason: 'integrity failures: ${module.integrity.failures.length}');
+      expect(module.integrity.failures.map((f) => f.chapterKey),
+          isNot(contains('Juan:1')));
+    });
+
+    test('carries the same cross-reference set as the English module', () async {
+      if (!have()) return;
+      final references = await repo.crossReferences(spanish, 'John', 1);
+
+      expect(references, isNotEmpty);
+      expect(references[1]!, isNotEmpty);
+      // TSK's anchors are English phrases, because the cross-reference set is keyed to
+      // the KJV versification. The links are what transfer; the anchor text does not, and
+      // the reader has to cope with a Spanish verse carrying an English anchor rather than
+      // dropping the group.
+      expect(references[1]!.map((g) => g.anchor), isNotEmpty);
+      final target = references[1]!.first.references.first;
+      final books = (await repo.open(spanish)).books;
+      final landing = books.firstWhere((b) => b.bookId == target.toBookId);
+      expect(await repo.chapter(spanish, landing.osisCode, target.toChapter), isNotEmpty,
+          reason: 'a Spanish cross-reference must lead to Spanish text');
+    });
   });
 
   group('the library installs the real module', () {
