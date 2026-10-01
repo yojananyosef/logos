@@ -41,10 +41,48 @@ The workspace shell, reproduced 1:1 from the reference: a 48dp icon rail with th
 section, the resource tab strip, the six-section toolbar and sub-toolbar, split panes, and
 the dashboard with its four observed card types.
 
+A reader that opens a real KJV: 66 books, 31,102 verses, phrase-level cross-references to
+336,829 TSK passages, three verse-number styles, four colour schemes, find, and a layout that
+reflows by layout class.
+
+And a library that can put one there. The `Suyos` / `Tienda` scopes, the `por Título` sort,
+search-as-you-type over titles and subtitles, grid and list with the choice persisted, and a
+refusing install path — see **Three defects the install path was hiding** below.
+
 **One deliberate divergence.** The reference application is not responsive — below 600
 logical pixels it keeps a 207px sidebar and the document overflows horizontally. This clone is
 identical on desktop and genuinely adaptive below that, in four layout classes resolved from
 available space.
+
+## Three defects the install path was hiding
+
+Building the library meant building a path from the user to an installed Bible for the first
+time. Three real defects were on that path, and all three are recorded here because none of
+them was visible from a test suite that never pressed the button.
+
+**`build_module.dart` produced unreproducible hashes.** `ArchiveFile` defaults `lastModTime`
+to the wall clock, and the tool never pinned it, so two builds of byte-identical content
+produced different `sha256` values. The AMF contract requires the opposite. This is the
+mechanism by which the catalog came to be wrong: a digest nobody can reproduce cannot be
+checked by anyone — not by a rebuild, not by a CI double build, not by a user comparing a
+download against the index. It could only be taken on faith. The rule now lives in
+`logos-catalogs/lib/module_archive.dart` and is a unit test, including a control that proves
+the property comes from the pin and not from the encoder being well behaved.
+
+**The catalog's KJV entry described a module that was never published.** It declared
+`38a18117…` (11,054,177 bytes) — the rebuilt module with cross-references — beside a
+`downloadUrl` serving `c3b094c6…` (3,553,961 bytes), the old upstream build with no
+`crossReferences` table and 27 chapters missing verse 1. An install would have failed on the
+checksum, so the one real resource in the catalog could not be fetched. The entry now carries
+the digest this repository actually builds — `6dbf144e…`, 11,054,191 bytes, reproducible —
+which is the first digest here that anybody can verify.
+
+**Seventeen of eighteen entries were installable on faith.** `sha256: "PLACEHOLDER_*"` is not
+a hash, so there is no reference value to verify a download against — and the library offered
+an `Instalar` button on every one. `isInstallable` now requires a cleared licence *and* a
+well-formed digest, and refuses before the request, the same ordering the licence gate
+already used. An integrity guarantee that is only a guarantee by faith is worse than none,
+because it looks like one.
 
 ## Where things are
 
@@ -64,18 +102,30 @@ Two OpenSpec changes, both validating in strict mode:
 
 | Change | Scope | Tasks |
 |---|---|---|
-| `logos-flutter-clone` | Foundation: shell, adaptive layout, design system, library, reader, search, dashboard, tools | 94, 31 done |
+| `logos-flutter-clone` | Foundation: shell, adaptive layout, design system, library, reader, search, dashboard, tools | 94, 37 done |
 | `logos-full-parity` | Feature parity: guides, workflows, notes, original languages, reference data, AI, sermon, reading programs, documents, media, layouts, settings, export, catalog | 271, 13 done |
 
-Honest progress: **44 of 365 tasks.** The foundation runs and is tested; the rest of the
+Honest progress: **50 of 365 tasks.** The foundation runs and is tested; the rest of the
 parity surface is specified but not built. The task lists mark only what is verified.
 
 ## Verification at this commit
 
 ```
-engine              flutter analyze clean,  92/92 tests, plus 5 opt-in against real modules
-logos-catalogs      dart analyze clean,      7/7 and 16/16 tests
+engine              flutter analyze clean,  381/381 tests, 11 opt-in against the real KJV
+logos-catalogs      dart analyze clean,      37/37 tests
 openspec            both changes valid in strict mode
+```
+
+The opt-in tests run against a KJV built by the content repository from eBible's USFM and
+CrossReferences' TSK export:
+
+```
+cd logos-catalogs
+dart run tool/build_module.dart --usfm eng-kjv2006_usfm.zip --id KJV \
+  --name "King James Version" --out dist \
+  --xrefs crossreferences_kjv.tsv
+cd ../engine
+LOGOS_MODULE_DIR=../logos-catalogs/dist flutter test test/real_modules_test.dart
 ```
 
 ## Documentation worth reading

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'data/repositories/search_repository.dart';
 import 'data/services/module_installer.dart';
 import 'domain/models/passage_ref.dart';
 import 'ui/features/library/view_models/library_view_model.dart';
+import 'ui/features/library/view_models/library_view_preferences.dart';
 import 'ui/features/reader/view_models/reader_preferences.dart';
 import 'ui/features/reader/view_models/reader_view_model.dart';
 import 'ui/features/search/view_models/search_view_model.dart';
@@ -93,17 +95,54 @@ final localModuleSourceProvider = Provider<LocalModuleSource>(
   (ref) => LocalModuleSource(ref.watch(modulesDirectoryProvider)),
 );
 
+/// How the module's bytes are fetched.
+///
+/// Overridable so a build that can reach the network swaps in an HTTP source while the
+/// shipped application reads only what the user put there. Resolved through
+/// `modulesDirectoryProvider` so overriding the directory in a test also redirects the
+/// fetch, which is what lets the whole install path run with no network at all.
+final moduleSourceProvider = Provider<ModuleSource>(
+  (ref) => ref.watch(localModuleSourceProvider),
+);
+
+/// The catalog index the library lists.
+///
+/// Supplied at startup by `main`, which is the one place allowed to read a bundled asset.
+/// A null catalog is a supported state — the library then lists what is installed and
+/// offers nothing to install — so this is an override rather than a hard dependency.
+final catalogJsonProvider = Provider<String?>((ref) => _catalogJson);
+
+String? _catalogJson;
+
+/// Sets the catalog index. Called once at startup.
+void configureCatalog(String? json) => _catalogJson = json;
+
 final libraryViewModelProvider = ChangeNotifierProvider<LibraryViewModel>((ref) {
   final vm = LibraryViewModel(
     repository: ref.watch(bibleRepositoryProvider),
     installer: ref.watch(moduleInstallerProvider),
-    source: ref.watch(localModuleSourceProvider),
+    source: ref.watch(moduleSourceProvider),
     catalogService: ref.watch(catalogServiceProvider),
+    viewPreferences: ref.watch(libraryViewPreferencesStoreProvider),
   );
   // Rebuilding the library when the module directory changes is deliberate: installing a
   // module is what makes it appear, and a stale list would be the bug.
   ref.watch(moduleStoreProvider);
+  // Loaded here rather than from the view, because the view has no business knowing when
+  // the library should be read and a screen that forgets to call `load` is a spinner that
+  // never resolves — which is exactly what this provider used to be.
+  unawaited(vm.load(catalogJson: ref.watch(catalogJsonProvider)));
+  unawaited(vm.loadViewMode());
   return vm;
+});
+
+/// Where the library's view mode is kept. Bootstrap supplies the real store; tests supply
+/// an [InMemoryLibraryViewStore].
+final libraryViewPreferencesStoreProvider =
+    Provider<LibraryViewPreferencesStore>((ref) {
+  throw UnimplementedError(
+    'libraryViewPreferencesStoreProvider must be overridden, or supplied by bootstrap.',
+  );
 });
 
 /// The reader's display settings, shared by every open Bible.

@@ -26,6 +26,41 @@ class LibraryEntry {
   bool isDistributableNow() =>
       resource.license.isDistributable(now: DateTime.now().toUtc());
 
+  /// Whether this resource can actually be installed today.
+  ///
+  /// Two independent gates, and both have to pass. The licence decides whether the engine
+  /// is *permitted* to fetch the bytes; the content hash decides whether it can *trust*
+  /// them. A catalog that clears the first and fails the second is the state seventeen of
+  /// this catalog's eighteen entries are in: `sha256: "PLACEHOLDER_CALVIN"` is not a hash,
+  /// so there is nothing to verify a download against, and offering an `Instalar` button
+  /// would be offering to pull eleven megabytes onto the device with no way to tell what
+  /// arrived.
+  ///
+  /// This is computed rather than declared so the two cannot drift. The alternative — a
+  /// separate `available` flag in the catalog — would be a second source of truth that a
+  /// catalog edit could set to `true` on a row whose hash is still a placeholder, and the
+  /// failure would only appear as a hash mismatch after the whole download.
+  bool get isInstallable => isDistributableNow() && hasVerifiableSource;
+
+  /// Whether the catalog gives a hash this engine can check a download against.
+  ///
+  /// Exactly 64 hex characters. A `PLACEHOLDER_*` value, an empty string, a null and a
+  /// truncated digest are all the same thing here: there is no reference value, so
+  /// verification is impossible. Only the shape is checked — whether the URL still serves
+  /// those bytes is a property of the network, and asserting it would mean asserting that
+  /// a third party has not changed a file, which no test can honestly promise.
+  bool get hasVerifiableSource {
+    final sha = resource.sha256;
+    if (sha == null || sha.length != 64) return false;
+    for (final unit in sha.codeUnits) {
+      final isHex = (unit >= 0x30 && unit <= 0x39) || // 0-9
+          (unit >= 0x41 && unit <= 0x46) || // A-F
+          (unit >= 0x61 && unit <= 0x66); // a-f
+      if (!isHex) return false;
+    }
+    return true;
+  }
+
   /// When the resource becomes distributable, if it ever does.
   DateTime? get releaseDate {
     final d = resource.license.releaseDate;
@@ -73,12 +108,24 @@ class LibraryState {
 
   List<LibraryEntry> get installed => entries.where((e) => e.installed).toList();
 
+  /// Catalogued, and installable right now.
   List<LibraryEntry> get available =>
-      entries.where((e) => !e.installed && e.isDistributableNow()).toList();
+      entries.where((e) => !e.installed && e.isInstallable).toList();
 
   /// Catalogued but not yet distributable. Shown, but not installable.
   List<LibraryEntry> get pending =>
       entries.where((e) => !e.installed && !e.isDistributableNow()).toList();
+
+  /// Permitted to be redistributed, but the catalog gives no hash to verify a download
+  /// against — the seventeen `PLACEHOLDER_*` rows in the current catalog.
+  ///
+  /// A separate bucket from [available] and not a fold of it, because the two states need
+  /// different words. "Available" is a promise the user can act on; this one is a gap in
+  /// the catalog, and telling the user a resource is available when the engine would have
+  /// to install it unverified is the same mistake as offering copyrighted text.
+  List<LibraryEntry> get unverifiable => entries
+      .where((e) => !e.installed && e.isDistributableNow() && !e.hasVerifiableSource)
+      .toList();
 
   List<LibraryEntry> byType(ResourceType t) =>
       entries.where((e) => e.resource.type == t).toList(growable: false);

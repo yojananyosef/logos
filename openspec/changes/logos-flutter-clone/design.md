@@ -218,3 +218,82 @@ D4 wins. What was built instead:
 
 A JSON index is still read, but as the **catalog's** manifest, fetched at runtime rather
 than compiled into the binary. The distinction is the whole point of D4.
+
+### D11 — The catalog *index* is bundled; the catalog *content* is not
+
+D10 drew the line at "no JSON index in the binary". Building §7 made that line untenable
+in practice, and the reason is worth writing down rather than quietly crossing.
+
+**The problem.** The catalog lives in a separate repository and there is no server. Before
+this decision the engine had no way to obtain a catalog at all: `LibraryViewModel.load()`
+was never called by anything, so the Biblioteca destination was a permanent spinner. Every
+other answer — ship a server, require the user to hand-place a `catalog.json`, infer the
+catalog from whatever `.amod` files are on disk — makes the first run either require a
+network (which D4 explicitly rejects) or require a manual file copy (which is the defect
+this section exists to remove). An application that lists nothing and installs nothing is
+indistinguishable from a broken one.
+
+**The choice.** The catalog **index** is bundled as an asset. The catalog **content** — the
+`.amod` payloads — is still fetched, hash-verified and installed exactly as before.
+
+**Why this is not D4.** The boundary D4 protects is scripture in the binary. An index is
+metadata: resource names, licences, hashes, URLs, sizes. It contains no text of any work.
+`test/catalog_sync_test.dart` asserts that the engine repository's index agrees, field for
+field, with the content repository's — so the copy is demonstrably a copy, and the two
+cannot drift silently.
+
+**What it costs, stated plainly.** A bundle cannot be refreshed without a release. When the
+content repository publishes a seventeenth real module, users do not see it until the engine
+ships. That is a real regression against D4's ideal and it is the price paid for a
+first-run experience that works. Two things bound it:
+
+- `tool/sync_catalog.dart` generates the asset from the content repository, and
+  `catalog_sync_test.dart` fails the build if the committed copy has drifted. Staleness
+  cannot accumulate silently; it fails a test.
+- `LibraryViewModel.load` treats a missing or unreadable catalog as a supported state and
+  falls back to the installed set. The bundle is an improvement, not a dependency, so
+  removing it degrades the library rather than breaking the application.
+
+**The alternative if this proves wrong.** A `CatalogSource` interface already exists in
+spirit — `configureCatalog(String?)` is a provider override, and `main` is the only place
+that reads the asset. Pointing the application at a network catalog is a change to one
+provider, not to the library.
+
+### D12 — Integrity is a second gate on installation, beside the licence
+
+The licence gate answers *may this engine fetch the bytes*. It never answered *can it trust
+what arrives*. Seventeen of the eighteen entries in the catalog declare
+`sha256: "PLACEHOLDER_*"` — not a hash, so there is no reference value to verify a download
+against. The library was offering an `Instalar` button on all seventeen, which is an
+integrity guarantee by faith, and a faith-only guarantee is worse than none because it looks
+like one.
+
+`LibraryEntry.isInstallable` therefore requires both a cleared licence and a well-formed
+digest, and `install` refuses before the request rather than after the download — the same
+ordering the licence gate already used, for the same reason: fetching first and declining
+afterwards means the application has already pulled the content onto the device in order to
+then refuse it.
+
+*Rejected:* a separate `available: true/false` flag in the catalog. It would be a second
+source of truth that a catalog edit could set to `true` on a row whose hash is still a
+placeholder, and the failure would only appear as a checksum mismatch after the whole
+download.
+
+### D13 — A module archive is byte-reproducible, and the rule is unit-tested
+
+The AMF contract requires that two builds of the same content produce the same `sha256`,
+achieved by pinning archive timestamps to the DOS epoch. `build_module.dart` never did this:
+`ArchiveFile` defaults `lastModTime` to the wall clock, so every build of byte-identical
+content produced a different digest.
+
+This is not a curiosity, it is the mechanism by which the catalog came to be wrong. A digest
+nobody can reproduce cannot be checked by anyone — not by a rebuild, not by a CI double
+build, not by a user comparing a downloaded module against the index. The value could only be
+taken on faith, and faith is how `38a18117…` came to sit in the catalog describing a module
+that was never published, beside a URL serving a different file.
+
+The rule now lives in `lib/module_archive.dart` rather than inline in the CLI, because a rule
+that can only be checked by producing an eleven-megabyte artefact and building it twice is a
+rule that gets broken silently. `logos-catalogs/test/module_archive_test.dart` asserts the
+property directly, and includes a control — an unpinned entry — that demonstrates the
+property comes from the pin rather than from the encoder being well behaved.

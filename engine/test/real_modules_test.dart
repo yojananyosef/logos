@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:logos_engine/data/repositories/bible_repository.dart';
+import 'package:logos_engine/data/repositories/library_repository.dart';
 import 'package:logos_engine/data/services/module_installer.dart';
+import 'package:logos_engine/ui/features/library/view_models/library_view_model.dart';
 import 'package:logos_engine/ui/features/reader/view_models/reader_preferences.dart';
 import 'package:logos_engine/ui/features/reader/view_models/reader_view_model.dart';
 
@@ -221,4 +225,158 @@ void main() {
         reason: 'Luke 17:36 text is carried inside 17:35');
     expect(await repo.verse('WEB', 'Luke', 17, 36), isEmpty);
   });
+
+  group('the library installs the real module', () {
+    // The rest of this file proves the reader can *read* a real module. These prove the
+    // user can get one — which is the gap this section closed. A reader that can open a
+    // KJV nobody is able to install is a reader with no way to reach it.
+    late Directory installDir;
+
+    setUp(() {
+      installDir = Directory.systemTemp.createTempSync('logos-real-install-');
+    });
+
+    tearDown(() {
+      if (installDir.existsSync()) installDir.deleteSync(recursive: true);
+    });
+
+    /// Serves the `.amod` files in [dir] as if they were the catalog's download URLs.
+    ///
+    /// Reading them from disk rather than from memory is deliberate: the catalog's own
+    /// URLs are `https://`, and a test that fetched one would make the suite depend on a
+    /// third party being up. The bytes, the hash and the installer are all real; only the
+    /// transport is local.
+    ModuleSource localSource(Directory dir) => _DirectorySource(dir);
+
+    test('a module the catalog vouches for installs and opens', () async {
+      final source = Directory(dir);
+      final file = source.listSync().whereType<File>().firstWhere(
+            (f) => f.path.endsWith('.amod'),
+          );
+      final id = file.uri.pathSegments.last.replaceAll('.amod', '');
+
+      final store = ModuleStore(installDir);
+      final vm = LibraryViewModel(
+        repository: BibleRepository(store),
+        installer: ModuleInstaller(store),
+        source: localSource(source),
+        catalogService: const CatalogService(),
+      );
+
+      // A catalog carrying this module's real digest, which is what makes it installable
+      // rather than merely listed.
+      final bytes = file.readAsBytesSync();
+      await vm.load(catalogJson: jsonEncode({
+        'format': 'amf-catalog',
+        'version': '1.0.0',
+        'modules': [
+          {
+            'id': id,
+            'type': 'bible',
+            'name': 'King James Version',
+            'shortName': id,
+            'language': 'en',
+            'version': '1.0.0',
+            'sha256': sha256.convert(bytes).toString(),
+            'sizeBytes': bytes.length,
+            'downloadUrl': '$id.amod',
+            'license': {
+              'id': 'PublicDomain',
+              'attribution': 'Public domain',
+              'sourceUrl': 'https://example.org',
+              'releaseDate': '1970-01-01',
+              'jurisdictions': <String>[],
+              'basis': 'Public domain by age.',
+            },
+          }
+        ],
+      }));
+
+      expect(vm.state.entries.single.isInstallable, isTrue,
+          reason: 'a real digest and a public-domain licence');
+
+      await vm.install(id);
+
+      expect(vm.state.failures, isEmpty,
+          reason: 'the real module must install: ${vm.state.failures}');
+      expect(vm.state.installed.map((e) => e.resource.id), [id]);
+      expect(ModuleStore(installDir).pathFor(id).existsSync(), isTrue);
+
+      // And the installed copy is a working Bible, not just a file on disk.
+      final opened = await BibleRepository(ModuleStore(installDir)).open(id);
+      expect(opened.books.length, greaterThanOrEqualTo(66));
+      expect(opened.integrity.isValid, isTrue,
+          reason: 'an installed module should be the sound one the catalog describes');
+      expect(await BibleRepository(ModuleStore(installDir)).verse(id, 'John', 1, 1),
+          isNotEmpty,
+          reason: 'John 1:1 is the verse the reader cites by name');
+    });
+
+    test('a module whose bytes do not match the catalog is refused', () async {
+      final source = Directory(dir);
+      final file = source.listSync().whereType<File>().firstWhere(
+            (f) => f.path.endsWith('.amod'),
+          );
+      final id = file.uri.pathSegments.last.replaceAll('.amod', '');
+
+      final store = ModuleStore(installDir);
+      final vm = LibraryViewModel(
+        repository: BibleRepository(store),
+        installer: ModuleInstaller(store),
+        source: localSource(source),
+        catalogService: const CatalogService(),
+      );
+
+      await vm.load(catalogJson: jsonEncode({
+        'format': 'amf-catalog',
+        'version': '1.0.0',
+        'modules': [
+          {
+            'id': id,
+            'type': 'bible',
+            'name': 'Wrong digest',
+            'shortName': id,
+            'language': 'en',
+            'version': '1.0.0',
+            // A digest that is well-formed and wrong. The point of the hash is that this
+            // is rejected, and a real eleven-megabyte module is what makes the check
+            // worth having: a mismatch caught after the download is the whole mechanism.
+            'sha256': '0' * 64,
+            'sizeBytes': 1,
+            'downloadUrl': '$id.amod',
+            'license': {
+              'id': 'PublicDomain',
+              'attribution': 'Public domain',
+              'sourceUrl': 'https://example.org',
+              'releaseDate': '1970-01-01',
+              'jurisdictions': <String>[],
+              'basis': 'Public domain by age.',
+            },
+          }
+        ],
+      }));
+
+      await vm.install(id);
+
+      expect(vm.state.failures[id], contains('sha256'));
+      expect(vm.state.installed, isEmpty);
+      expect(ModuleStore(installDir).pathFor(id).existsSync(), isFalse,
+          reason: 'a refused module must leave nothing behind');
+    });
+  });
+}
+
+/// Reads a module from a directory of `.amod` files, standing in for the catalog's
+/// download URLs.
+class _DirectorySource implements ModuleSource {
+  const _DirectorySource(this.root);
+
+  final Directory root;
+
+  @override
+  Future<List<int>> fetch(String url, {String? expectedSha256}) async {
+    final file = File('${root.path}/$url');
+    if (!file.existsSync()) throw StateError('no module at $url');
+    return file.readAsBytes();
+  }
 }
