@@ -232,29 +232,39 @@ void main() {
     expect(vm.state.osisCode, 'John', reason: 'and the reader can come back');
   });
 
-  test('the upstream merged-verse defect is still present in WEB', () async {
+  test('the merged-verse defect is fixed in WEB: no verse carries its neighbour\'s text',
+      () async {
     if (!installed.contains('WEB')) return;
 
-    final module = await repo.open('WEB');
-
-    // A second, distinct defect. Four chapters contain merged verses: the ETL puts a
-    // multi-verse segment's text under the first verse number and never populates
-    // `verseEnd`, so Luke 17:36's text sits inside 17:35. Every chapter still *starts*
-    // at verse 1, which is why a check for that alone reports the module as sound.
-    expect(module.integrity.failures, hasLength(4));
+    // Este test documentaba un defecto del ETL heredado y **exigía** que siguiera
+    // ahí: cuatro capítulos con versículos fusionados, el texto de 17:36 dentro
+    // de 17:35 porque el emisor tomaba solo el primer número y nunca llenaba
+    // `verseEnd`. Invertirlo es la forma de dejar de escribir un test que pasa
+    // mientras el módulo está mal.
+    //
+    // Lo que se comprueba ahora es lo contrario de lo que se comprobaba. No que
+    // el texto de 17:36 esté *dentro* de 17:35, sino que 17:35 contiene
+    // exactamente su propio texto. Ese fue el defecto: no que faltara el 36.
+    final luke35 = await repo.verse('WEB', 'Luke', 17, 35);
+    expect(luke35, hasLength(1));
     expect(
-      module.integrity.failures.map((f) => f.chapterKey),
-      containsAll(['Luke:17', 'Acts:8', 'Acts:15', 'Acts:24']),
+      luke35.single.text,
+      contains('There will be two grinding grain together'),
+      reason: 'Luke 17:35 dice esto',
+    );
+    expect(
+      luke35.single.text,
+      isNot(contains('in one bed')),
+      reason: 'la frase de 17:34 pertenece a 17:34. Si aparece aquí, el texto de un '
+          'versículo se ha pegado al siguiente.',
     );
 
-    // The text is present, just misaddressed — which is worse for a study application
-    // than a missing chapter, because a search for the merged verse returns nothing
-    // while its words are visible one line above.
-    final merged = await repo.verse('WEB', 'Luke', 17, 35);
-    expect(merged, hasLength(1));
-    expect(merged.single.text, contains('the other will be left'),
-        reason: 'Luke 17:36 text is carried inside 17:35');
-    expect(await repo.verse('WEB', 'Luke', 17, 36), isEmpty);
+    // Y 17:36 no trae texto en esta fuente. El USFX de eBible lo declara vacío y
+    // pone una nota que dice que algunos manuscritos griegos añaden una frase
+    // que esta traducción no incluye. No es un versículo fusionado: es un
+    // versículo que la fuente no trae, y el módulo lo refleja en vez de inventar.
+    final luke36 = await repo.verse('WEB', 'Luke', 17, 36);
+    expect(luke36, isEmpty);
   });
 
   // Spanish is the application's first language, not a later addition, so a module built
