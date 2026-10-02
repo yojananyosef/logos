@@ -21,6 +21,23 @@ import 'support/module_builder.dart';
 /// count has to be the module's, and stepping has to cross a chapter boundary.
 void main() {
   late Directory temp;
+  // Repositorios entregados a los view models de cada test. Ninguno tiene
+  // `dispose` — no son `ChangeNotifier` con vida propia — asi que sin esta
+  // lista el test que abre un modulo deja su copia entera (39 MB para el KJV)
+  // en el tmpfs del sistema, para siempre.
+  final repos = <BibleRepository>[];
+
+  /// A repository over the test's modules, released when the test ends.
+  ///
+  /// `BibleRepository.open` extracts the module to a database file on disk and
+  /// only `dispose()` removes it, so an inline
+  /// `BibleRepository(ModuleStore(temp))` reads as if it were free and leaks a copy of the module per call. Every
+  /// repository this suite builds goes through here.
+  BibleRepository tracked() {
+    final repo = BibleRepository(ModuleStore(temp));
+    repos.add(repo);
+    return repo;
+  }
   late ReaderPreferencesViewModel preferences;
 
   setUp(() {
@@ -29,6 +46,10 @@ void main() {
   });
 
   tearDown(() {
+    for (final r in repos.reversed) {
+      r.dispose();
+    }
+    repos.clear();
     if (temp.existsSync()) temp.deleteSync(recursive: true);
   });
 
@@ -49,7 +70,7 @@ void main() {
 
   Future<ReaderViewModel> open(ModuleBuilder builder, {String? osisCode, int chapter = 1}) async {
     await builder.writeTo(temp);
-    final vm = ReaderViewModel(BibleRepository(ModuleStore(temp)), preferences);
+    final vm = ReaderViewModel(tracked(), preferences);
     await vm.open(builder.id, osisCode: osisCode ?? 'John', chapter: chapter);
     return vm;
   }
@@ -116,7 +137,7 @@ void main() {
   group('finding in a module', () {
     test('reports every occurrence across the whole module', () async {
       await open(fixture());
-      final finder = ModuleFinder(BibleRepository(ModuleStore(temp)));
+      final finder = ModuleFinder(tracked());
 
       final result = await finder.find('FIND', 'beginning');
 
@@ -126,14 +147,14 @@ void main() {
 
     test('counts a term twice in one verse separately', () async {
       await open(fixture());
-      final finder = ModuleFinder(BibleRepository(ModuleStore(temp)));
+      final finder = ModuleFinder(tracked());
 
       expect((await finder.find('FIND', 'wisdom')).count, 2);
     });
 
     test('the matches are in reading order', () async {
       await open(fixture());
-      final result = await ModuleFinder(BibleRepository(ModuleStore(temp))).find(
+      final result = await ModuleFinder(tracked()).find(
         'FIND',
         'beginning',
       );
@@ -148,7 +169,7 @@ void main() {
     test('a term with no occurrences returns an empty result', () async {
       await open(fixture());
 
-      final result = await ModuleFinder(BibleRepository(ModuleStore(temp)))
+      final result = await ModuleFinder(tracked())
           .find('FIND', 'qabal');
 
       expect(result.isEmpty, isTrue);
@@ -158,7 +179,7 @@ void main() {
     test('an empty term searches nothing rather than everything', () async {
       await open(fixture());
 
-      final result = await ModuleFinder(BibleRepository(ModuleStore(temp))).find('FIND', '   ');
+      final result = await ModuleFinder(tracked()).find('FIND', '   ');
 
       expect(result.isEmpty, isTrue);
     });
@@ -166,7 +187,7 @@ void main() {
     test('reports every chapter a term appears in', () async {
       await open(fixture());
 
-      final result = await ModuleFinder(BibleRepository(ModuleStore(temp)))
+      final result = await ModuleFinder(tracked())
           .find('FIND', 'earth');
 
       // Gen 1:1, Gen 1:2 and Ps 23:2 — three chapters in two books. A find that stopped at
@@ -364,7 +385,7 @@ void main() {
     test('every match can be cited', () async {
       await open(fixture());
 
-      final result = await ModuleFinder(BibleRepository(ModuleStore(temp)))
+      final result = await ModuleFinder(tracked())
           .find('FIND', 'beginning');
 
       for (final m in result.matches) {

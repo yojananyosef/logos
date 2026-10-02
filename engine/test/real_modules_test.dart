@@ -37,22 +37,43 @@ void main() {
 
   late BibleRepository repo;
   final installed = <String>[];
+  // El directorio donde el `setUpAll` instala los modulos. Se guarda aparte del
+  // `dir` de arriba, que es `LOGOS_MODULE_DIR`: los modulos de origen. Borrar ese
+  // por confunsion destruiria la unica copia de lo que hay que probar, y desde
+  // el repositorio equivocado nadie lo notaria.
+  late Directory installRoot;
 
   setUpAll(() async {
     final source = Directory(dir);
-    final store = ModuleStore(
+    installRoot = ModuleStore(
       Directory.systemTemp.createTempSync('logos-real-'),
-    );
+    ).root;
     for (final file in source.listSync().whereType<File>()) {
       if (!file.path.endsWith('.amod')) continue;
       final id = file.uri.pathSegments.last.replaceAll('.amod', '');
-      final result = await ModuleInstaller(store).install(
+      final result = await ModuleInstaller(ModuleStore(installRoot)).install(
         id,
         bytes: file.readAsBytesSync(),
       );
       if (result.status == InstallStatus.ok) installed.add(id);
     }
-    repo = BibleRepository(store);
+    repo = BibleRepository(ModuleStore(installRoot));
+  });
+
+  // `BibleRepository.open` extrae cada `.amod` a una base temporal de unos 39 MB y
+  // solo la borra en `dispose()`. Sin esto, 17 tests contra el módulo de
+  // referencia dejan 663 MB en el tmpfs del sistema, que en esta máquina son
+  // 3,7 GB en total: el arnés era lo que llenaba el disco y lo que hacia fallar
+  // la suite siguiente por `No space left on device`.
+  //
+  // No es un detalle del arnés. En la app, `app_providers.dart` construye el
+  // repositorio igual que aquí y depende de que riverpod llame a `dispose()` al
+  // cerrar el provider; si algún camino lo pierde, es la app la que se come el
+  // disco, y en un móvil eso no es un tmpfs de 3,7 GB sino el almacenamiento que
+  // el usuario tiene.
+  tearDownAll(() {
+    repo.dispose();
+    if (installRoot.existsSync()) installRoot.deleteSync(recursive: true);
   });
 
   test('a real module opens, lists its books and answers a verse lookup', () async {
@@ -374,8 +395,13 @@ void main() {
       final id = file.uri.pathSegments.last.replaceAll('.amod', '');
 
       final store = ModuleStore(installDir);
+      // `LibraryViewModel` no dispose: no es un `ChangeNotifier` con vida propia.
+      // El repositorio lo libera quien lo crea, y en produccion es el provider de
+      // riverpod. Aqui no hay provider, asi que lo suelta el test — sin esto cada
+      // `open` deja una copia de 39 MB en el tmpfs que sobrevive al test.
+      final viewRepo = BibleRepository(store);
       final vm = LibraryViewModel(
-        repository: BibleRepository(store),
+        repository: viewRepo,
         installer: ModuleInstaller(store),
         source: localSource(source),
         catalogService: const CatalogService(),
@@ -421,13 +447,20 @@ void main() {
       expect(ModuleStore(installDir).pathFor(id).existsSync(), isTrue);
 
       // And the installed copy is a working Bible, not just a file on disk.
-      final opened = await BibleRepository(ModuleStore(installDir)).open(id);
+      //
+      // One repository for both assertions. `BibleRepository.open` extracts the
+      // module to a ~39 MB temp database and only `dispose()` removes it, so a
+      // second inline repository here is 39 MB that outlives the test — and a
+      // suite that runs 17 real-module tests leaves hundreds of megabytes of
+      // orphaned copies behind for whatever runs next.
+      final installed = BibleRepository(ModuleStore(installDir));
+      final opened = await installed.open(id);
       expect(opened.books.length, greaterThanOrEqualTo(66));
       expect(opened.integrity.isValid, isTrue,
           reason: 'an installed module should be the sound one the catalog describes');
-      expect(await BibleRepository(ModuleStore(installDir)).verse(id, 'John', 1, 1),
-          isNotEmpty,
+      expect(await installed.verse(id, 'John', 1, 1), isNotEmpty,
           reason: 'John 1:1 is the verse the reader cites by name');
+      installed.dispose();
     });
 
     test('a module whose bytes do not match the catalog is refused', () async {
@@ -438,8 +471,9 @@ void main() {
       final id = file.uri.pathSegments.last.replaceAll('.amod', '');
 
       final store = ModuleStore(installDir);
+      final viewRepo = BibleRepository(store);
       final vm = LibraryViewModel(
-        repository: BibleRepository(store),
+        repository: viewRepo,
         installer: ModuleInstaller(store),
         source: localSource(source),
         catalogService: const CatalogService(),
@@ -480,6 +514,7 @@ void main() {
       expect(vm.state.installed, isEmpty);
       expect(ModuleStore(installDir).pathFor(id).existsSync(), isFalse,
           reason: 'a refused module must leave nothing behind');
+      viewRepo.dispose();
     });
   });
 }

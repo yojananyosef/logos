@@ -24,6 +24,23 @@ import 'support/module_builder.dart';
 /// chapter is still a missing number.
 void main() {
   late Directory temp;
+  // Repositorios entregados a los view models de cada test. Ninguno tiene
+  // `dispose` — no son `ChangeNotifier` con vida propia — asi que sin esta
+  // lista el test que abre un modulo deja su copia entera (39 MB para el KJV)
+  // en el tmpfs del sistema, para siempre.
+  final repos = <BibleRepository>[];
+
+  /// A repository over the test's modules, released when the test ends.
+  ///
+  /// `BibleRepository.open` extracts the module to a database file on disk and
+  /// only `dispose()` removes it, so an inline
+  /// `BibleRepository(ModuleStore(temp))` reads as if it were free and leaks a copy of the module per call. Every
+  /// repository this suite builds goes through here.
+  BibleRepository tracked() {
+    final repo = BibleRepository(ModuleStore(temp));
+    repos.add(repo);
+    return repo;
+  }
   late ReaderPreferencesViewModel preferences;
   late ReaderViewModel vm;
 
@@ -33,6 +50,10 @@ void main() {
   });
 
   tearDown(() {
+    for (final r in repos.reversed) {
+      r.dispose();
+    }
+    repos.clear();
     if (temp.existsSync()) temp.deleteSync(recursive: true);
   });
 
@@ -53,7 +74,7 @@ void main() {
     await tester.runAsync(() async {
       await fixture().writeTo(temp);
       vm = ReaderViewModel(
-        BibleRepository(ModuleStore(temp)),
+        tracked(),
         preferences,
       );
       await vm.open('NUM', osisCode: 'John', chapter: 1);

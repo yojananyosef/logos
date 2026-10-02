@@ -18,12 +18,42 @@ import 'support/module_builder.dart';
 /// index already does would pass while `CERCA` was broken.
 void main() {
   late Directory temp;
+  // Repositorios entregados a los view models de cada test. Ninguno tiene
+  // `dispose` — no son `ChangeNotifier` con vida propia — asi que sin esta
+  // lista el test que abre un modulo deja su copia entera (39 MB para el KJV)
+  // en el tmpfs del sistema, para siempre.
+  final repos = <BibleRepository>[];
+
+  /// A repository over the test's modules, released when the test ends.
+  ///
+  /// `BibleRepository.open` extracts the module to a database file on disk and
+  /// only `dispose()` removes it, so an inline
+  /// `BibleRepository(ModuleStore(temp))` reads as if it were free and leaks a copy of the module per call. Every
+  /// repository this suite builds goes through here.
+  BibleRepository tracked() {
+    final repo = BibleRepository(ModuleStore(temp));
+    repos.add(repo);
+    return repo;
+  }
+
+  /// A search repository over a tracked [BibleRepository].
+  ///
+  /// `SearchRepository` has no state of its own; the databases live in the
+  /// repository it wraps, so tracking the inner one is enough.
+  SearchRepository trackedSearch() {
+    final bible = tracked();
+    return SearchRepository(bible);
+  }
 
   setUp(() {
     temp = Directory.systemTemp.createTempSync('logos-search-');
   });
 
   tearDown(() {
+    for (final r in repos.reversed) {
+      r.dispose();
+    }
+    repos.clear();
     if (temp.existsSync()) temp.deleteSync(recursive: true);
   });
 
@@ -41,7 +71,7 @@ void main() {
         bytes: await m.build(),
       );
     }
-    return SearchRepository(BibleRepository(store));
+    return trackedSearch();
   }
 
   /// A module whose text makes each operator's answer checkable by eye.
@@ -356,7 +386,7 @@ void main() {
     test('an unreadable module does not fail the whole search', () async {
       // A file that is not a module at all, sitting where a module is expected.
       File('${temp.path}/BROKEN.amod').writeAsBytesSync(List<int>.filled(64, 0));
-      final repo = SearchRepository(BibleRepository(ModuleStore(temp)));
+      final repo = trackedSearch();
       final run = await search(repo, 'Word');
       expect(run.isEmpty, isTrue, reason: 'no crash, no results');
     });

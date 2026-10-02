@@ -46,9 +46,18 @@ final moduleStoreProvider = Provider<ModuleStore>((ref) {
   return ModuleStore(configured ?? ref.watch(modulesDirectoryProvider));
 });
 
-final bibleRepositoryProvider = Provider<BibleRepository>(
-  (ref) => BibleRepository(ref.watch(moduleStoreProvider)),
-);
+final bibleRepositoryProvider = Provider<BibleRepository>((ref) {
+  final repo = BibleRepository(ref.watch(moduleStoreProvider));
+  // Without this the provider is never disposed and every module the reader opens
+  // leaves its extracted database behind. `BibleRepository.open` stages the module
+  // to a real file on disk — drift opens from a path — and `dispose()` is what
+  // removes it, so without this line each opened module leaks its whole database.
+  // On a desktop this is invisible until the disk fills; on a phone it is the
+  // user's storage, and it fills faster than anyone expects because the leaked file
+  // is the size of the module.
+  ref.onDispose(repo.dispose);
+  return repo;
+});
 
 final searchRepositoryProvider = Provider<SearchRepository>(
   (ref) => SearchRepository(ref.watch(bibleRepositoryProvider)),

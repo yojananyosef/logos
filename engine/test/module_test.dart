@@ -13,12 +13,33 @@ import 'package:logos_engine/data/services/module_installer.dart';
 
 void main() {
   late Directory temp;
+  // Repositorios entregados a los view models de cada test. Ninguno tiene
+  // `dispose` — no son `ChangeNotifier` con vida propia — asi que sin esta
+  // lista el test que abre un modulo deja su copia entera (39 MB para el KJV)
+  // en el tmpfs del sistema, para siempre.
+  final repos = <BibleRepository>[];
+
+  /// A repository over the test's modules, released when the test ends.
+  ///
+  /// `BibleRepository.open` extracts the module to a database file on disk and
+  /// only `dispose()` removes it, so an inline
+  /// `BibleRepository(ModuleStore(temp))` reads as if it were free and leaks a copy of the module per call. Every
+  /// repository this suite builds goes through here.
+  BibleRepository tracked() {
+    final repo = BibleRepository(ModuleStore(temp));
+    repos.add(repo);
+    return repo;
+  }
 
   setUp(() {
     temp = Directory.systemTemp.createTempSync('logos-modules-');
   });
 
   tearDown(() {
+    for (final r in repos.reversed) {
+      r.dispose();
+    }
+    repos.clear();
     if (temp.existsSync()) temp.deleteSync(recursive: true);
   });
 
@@ -38,7 +59,7 @@ void main() {
     test('reads a module that matches the format', () async {
       await sampleModule('SAMPLE').writeTo(temp);
 
-      final module = await BibleRepository(ModuleStore(temp)).open('SAMPLE');
+      final module = await tracked().open('SAMPLE');
 
       expect(module.books.map((b) => b.osisCode), containsAll(['John', 'Gen']));
       expect(module.integrity.isValid, isTrue,
@@ -93,7 +114,7 @@ void main() {
 
       expect(result.status, InstallStatus.ok);
       expect(store.pathFor('SAMPLE').existsSync(), isTrue);
-      expect(await BibleRepository(store).listInstalled(), hasLength(1));
+      expect(await tracked().listInstalled(), hasLength(1));
     });
 
     test('refuses a module whose hash does not match, and writes nothing', () async {
@@ -142,7 +163,7 @@ void main() {
   group('reading', () {
     test('returns a whole chapter in order', () async {
       await sampleModule('SAMPLE').writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       final verses = await repo.chapter('SAMPLE', 'John', 1);
 
@@ -152,7 +173,7 @@ void main() {
 
     test('returns a single verse', () async {
       await sampleModule('SAMPLE').writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       final verses = await repo.verse('SAMPLE', 'John', 1, 2);
 
@@ -162,7 +183,7 @@ void main() {
 
     test('an absent verse returns empty rather than throwing', () async {
       await sampleModule('SAMPLE').writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       // John 99 does not exist. A reader that throws here shows an error instead of an
       // empty chapter, and the user cannot tell the two apart.
@@ -172,7 +193,7 @@ void main() {
 
     test('finds text through the FTS5 index', () async {
       await sampleModule('SAMPLE').writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       final hits = await repo.search('SAMPLE', 'beginning');
 
@@ -193,7 +214,7 @@ void main() {
       b.addVerse(
           'John', 1, 1, 'En el principio era el Verbo, y el Verbo estaba con Dios.');
       await b.writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       expect(await repo.search('ES', 'principio'), isNotEmpty);
     });
@@ -208,7 +229,7 @@ void main() {
       final b = ModuleBuilder('SPAN');
       b.addVerseRange('Luke', 17, 35, 36, 'Two will be taken; one will be left.');
       await b.writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       expect(await repo.verse('SPAN', 'Luke', 17, 35), hasLength(1));
       final second = await repo.verse('SPAN', 'Luke', 17, 36);
@@ -223,7 +244,7 @@ void main() {
       final b = ModuleBuilder('SPAN');
       b.addVerseRange('Luke', 17, 35, 36, 'Two will be taken.');
       await b.writeTo(temp);
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
 
       expect(await repo.verse('SPAN', 'Luke', 17, 34), isEmpty);
       expect(await repo.verse('SPAN', 'Luke', 17, 37), isEmpty);
@@ -241,7 +262,7 @@ void main() {
       b.addVerse('Luke', 17, 37, 'Where, Lord?');
       await b.writeTo(temp);
 
-      final module = await BibleRepository(ModuleStore(temp)).open('SPAN');
+      final module = await tracked().open('SPAN');
       expect(module.integrity.isValid, isTrue, reason: '${module.integrity.failures}');
     });
   });
@@ -257,7 +278,7 @@ void main() {
       b.addChapterStartingAt('John', 2, 2);
       await b.writeTo(temp);
 
-      final module = await BibleRepository(ModuleStore(temp)).open('BROKEN');
+      final module = await tracked().open('BROKEN');
 
       expect(module.isSound, isFalse);
       expect(module.integrity.failures.map((f) => f.chapterKey), contains('John:1'));
@@ -271,7 +292,7 @@ void main() {
       b.addVerse('John', 1, 2, 'He was in the beginning with God.');
       await b.writeTo(temp);
 
-      final repo = BibleRepository(ModuleStore(temp));
+      final repo = tracked();
       final module = await repo.open('BROKEN');
 
       expect(module.integrity.isValid, isFalse);
@@ -282,7 +303,7 @@ void main() {
   group('listing', () {
     test('lists installed modules with their manifest metadata', () async {
       await sampleModule('SAMPLE').writeTo(temp);
-      final installed = await BibleRepository(ModuleStore(temp)).listInstalled();
+      final installed = await tracked().listInstalled();
 
       expect(installed, hasLength(1));
       expect(installed.single.id, 'SAMPLE');

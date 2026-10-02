@@ -16,18 +16,29 @@ import 'support/module_builder.dart';
 /// Reader tests, against real modules built by the shared builder.
 void main() {
   late Directory temp;
+  // Los repositorios que se entregan a los view models de cada test. Ninguno
+  // tiene `dispose` — no son `ChangeNotifier` con vida propia — asi que sin esta
+  // lista cada test que abre un modulo deja su copia entera en el tmpfs. 14 tests
+  // de este fichero, 39 MB cada uno.
+  final repos = <BibleRepository>[];
 
   setUp(() {
     temp = Directory.systemTemp.createTempSync('logos-reader-');
   });
 
   tearDown(() {
+    for (final r in repos.reversed) {
+      r.dispose();
+    }
+    repos.clear();
     if (temp.existsSync()) temp.deleteSync(recursive: true);
   });
 
   Future<BibleRepository> install(ModuleBuilder builder) async {
     await builder.writeTo(temp);
-    return BibleRepository(ModuleStore(temp));
+    final repo = BibleRepository(ModuleStore(temp));
+    repos.add(repo);
+    return repo;
   }
 
   /// Fresh reader settings for a test.
@@ -232,7 +243,9 @@ void main() {
 
   group('failure states', () {
     test('an absent module reports an error rather than hanging', () async {
-      final vm = ReaderViewModel(BibleRepository(ModuleStore(temp)), newPreferences());
+      final repo = BibleRepository(ModuleStore(temp));
+      repos.add(repo);
+      final vm = ReaderViewModel(repo, newPreferences());
       await vm.open('MISSING');
 
       expect(vm.state.status, ReaderStatus.failed);
